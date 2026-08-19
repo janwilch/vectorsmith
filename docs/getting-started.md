@@ -14,17 +14,17 @@ cd vectorsmith
 uv sync
 ```
 
-From PyPI (when published):
+From PyPI (when published), install the extra for **your** store — [which stores ship](vector-stores.md):
 
 ```bash
-pip install "vectorsmith[qdrant]"
+pip install "vectorsmith[qdrant]"      # or pgvector, chroma, pinecone, weaviate, milvus
 ```
 
 ## 2. Look at a `tools.yaml`
 
 Open [`examples/qdrant_invoices/tools.invoices.yaml`](https://github.com/kjgpta/vectorsmith/tree/main/examples/qdrant_invoices/tools.invoices.yaml). You will see:
 
-- A **connection** (`backend: qdrant`, URL as `${QDRANT_URL}`)
+- A **connection** (`backend: qdrant`, URL as `${QDRANT_URL}`) — six backends ship; see [vector stores](vector-stores.md)
 - Tools with **kinds** (`search`, `lookup`, `count`)
 - **`static_filters`** the model never sees (`tenant: acme`)
 - **Parameters** the model may pass (`client`, `status`, `min_amount`)

@@ -137,9 +137,12 @@ project.issues   # VBxxxx
 
 ## Extras
 
+Store extras (pick one or more): **[vector stores](vector-stores.md)** — `qdrant`, `pgvector`, `chroma`, `pinecone`, `weaviate`, `milvus`. Each extra is the store client plus FastEmbed.
+
+Agent extras (not databases):
+
 | Extra | What you get |
 |---|---|
-| `qdrant` / `pgvector` / `chroma` / `pinecone` / `weaviate` / `milvus` | Store client + FastEmbed |
 | `langchain` | `langchain-core` |
 | `langgraph` | `langchain-core` + `langgraph` |
 | `openai-agents` | OpenAI Agents SDK |

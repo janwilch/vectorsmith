@@ -115,7 +115,7 @@ CLI: `--env-file .env` (only keys in that file — the process environment is **
 
 ### Backend fields
 
-`backend` is the discriminator.
+`backend` is the discriminator. Six stores ship in the package — [vector stores](vector-stores.md) (install extra, capabilities, hybrid).
 
 | `backend` | Required fields | Optional |
 |---|---|---|
@@ -484,6 +484,7 @@ JSON Schema for editors lives next to the models: `packages/core/vectorsmith_cor
 
 ## Related
 
+- [Vector stores](vector-stores.md) — Qdrant, pgvector, Chroma, Pinecone, Weaviate, Milvus
 - [Use in agents](use-in-agents.md) — `load_tools` vs `serve`
 - [Integrations](integrations/README.md) — Claude, Codex, LangGraph, …
 - [Coexistence](coexistence.md) — this file next to Slack / GitHub MCP

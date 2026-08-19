@@ -31,7 +31,7 @@ flowchart TB
 
 ## What you own
 
-- The vector / table store (Qdrant, pgvector, …)
+- The vector / table store (one of six backends — [vector stores](vector-stores.md))
 - The YAML contract (who may search what, with which filters)
 - Secrets in env files (`${QDRANT_URL}` under `connections` only)
 

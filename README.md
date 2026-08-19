@@ -227,7 +227,7 @@ Copy-paste snippets: [`examples/mcp_hosts/`](examples/mcp_hosts/). Slack, GitHub
 
 ## Stores
 
-`backend` on a connection is one of:
+`backend` on a connection is one of six shipped adapters. Full matrix (extras, hybrid, nested paths): **[vector stores](docs/vector-stores.md)**.
 
 `qdrant` · `pgvector` · `chroma` · `pinecone` · `weaviate` · `milvus`
 
@@ -283,6 +283,7 @@ Tickets are a second file / second MCP name: `tools.tickets.yaml` → `--name ti
 | I want to… | Go here |
 |---|---|
 | Get a tool working in five minutes | [Getting started](docs/getting-started.md) |
+| See which vector stores ship | [Vector stores](docs/vector-stores.md) |
 | Understand every `tools.yaml` field | [YAML reference](docs/tools-yaml-reference.md) |
 | Plug into Claude, Codex, Cursor, LangChain, … | [Integrations](docs/integrations/README.md) |
 | Look up a CLI flag | [CLI](docs/cli.md) |

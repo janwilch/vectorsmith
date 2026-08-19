@@ -4,6 +4,10 @@ Hub: [documentation home](index.md) · [Getting started](getting-started.md) · 
 
 ## Install and run
 
+### Which vector stores are supported?
+
+Six: **Qdrant, pgvector, Chroma, Pinecone, Weaviate, Milvus**. Install `vectorsmith[<backend>]`. There is no extra for Elasticsearch, Redis, or OpenSearch. Details: [vector stores](vector-stores.md).
+
 ### `vectorsmith: command not found`
 
 Install so the CLI is on `PATH`: `pip install "vectorsmith[qdrant]"` (or `uv sync` in this repo, then `uv run vectorsmith …`). Claude Desktop often cannot see a venv under `~/Downloads` — [Desktop](quickstart-desktop.md).

@@ -47,6 +47,7 @@ Same file either way. The agent never sees the store URL, the API key, or hidden
 
 | | |
 |---|---|
+| [Vector stores](vector-stores.md) | Qdrant, pgvector, Chroma, Pinecone, Weaviate, Milvus |
 | [tools.yaml](tools-yaml-reference.md) | Every field, operators, pipelines, `VBxxxx` |
 | [CLI](cli.md) | `init` · `validate` · `serve` · `test` · `introspect` · `drafts` · `approve` · `auth` |
 | [Python API](python-api.md) | `connect`, `load_tools`, extras, return envelope |
@@ -73,7 +74,7 @@ pip install "vectorsmith[qdrant,openai-agents]"
 pip install "vectorsmith[qdrant,anthropic]"
 ```
 
-Store extras: `qdrant` · `pgvector` · `chroma` · `pinecone` · `weaviate` · `milvus`.
+Store extras: see [vector stores](vector-stores.md) (`qdrant` · `pgvector` · `chroma` · `pinecone` · `weaviate` · `milvus`).
 
 ---
 
