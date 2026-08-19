@@ -1,6 +1,6 @@
 # CLI reference
 
-Hub: [documentation home](README.md). Python env rules differ: [python-api.md](python-api.md).
+Hub: [documentation home](index.md). Python env rules differ: [python-api.md](python-api.md).
 
 ```bash
 vectorsmith --help

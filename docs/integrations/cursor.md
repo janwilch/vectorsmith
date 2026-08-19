@@ -1,6 +1,6 @@
 # Cursor
 
-Hub: [documentation home](../README.md) · [Integrations](README.md).
+Hub: [documentation home](../index.md) · [Integrations](README.md).
 
 Cursor is an MCP host. It spawns `vectorsmith serve` the same way Claude Desktop does. It does **not** import Python.
 

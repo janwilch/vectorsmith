@@ -1,6 +1,6 @@
 # Claude Code
 
-Hub: [documentation home](../README.md) · [Integrations](README.md).
+Hub: [documentation home](../index.md) · [Integrations](README.md).
 
 Claude Code is a **different** MCP host from Claude Desktop. It does **not** read `claude_desktop_config.json`.
 

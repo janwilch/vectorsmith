@@ -1,6 +1,6 @@
 # Contributing
 
-User-facing documentation lives in [`docs/`](docs/README.md). If you change YAML fields, CLI flags, or an integration path, update the matching page there (and the FAQ if the failure mode is new).
+User-facing documentation lives in [`docs/`](docs/index.md) and is published at [kjgpta.github.io/vectorsmith](https://kjgpta.github.io/vectorsmith/). If you change YAML fields, CLI flags, or an integration path, update the matching page there (and the FAQ if the failure mode is new). Preview with `mkdocs serve` after `pip install 'mkdocs>=1.6,<2' mkdocs-material mkdocs-autorefs`.
 
 ## Setup
 

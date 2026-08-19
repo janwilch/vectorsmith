@@ -39,3 +39,6 @@ htmlcov/
 # Local drafts produced by serve --enable-define
 tools.drafts.yaml
 **/tools.drafts.yaml
+
+# MkDocs
+site/

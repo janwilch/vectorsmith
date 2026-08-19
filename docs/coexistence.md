@@ -1,6 +1,6 @@
 # Using VectorSmith next to other MCP servers
 
-Hub: [documentation home](README.md) · [Integrations](integrations/README.md).
+Hub: [documentation home](index.md) · [Integrations](integrations/README.md).
 
 VectorSmith is **one MCP server**. Claude Desktop, Claude Code, Cursor, Codex, and claude.ai all attach **many** servers at once. Tools from every server show up in the same tool list. The host picks among them by name and description.
 

@@ -1,6 +1,6 @@
 # LangChain
 
-Hub: [documentation home](../README.md) · [Python API](../python-api.md) · [Integrations](README.md).
+Hub: [documentation home](../index.md) · [Python API](../python-api.md) · [Integrations](README.md).
 
 In-process. No `vectorsmith serve` subprocess.
 
@@ -22,7 +22,7 @@ finally:
 
 `load_tools` compiles the YAML and returns LangChain `StructuredTool`s (requires the `langchain` extra / `langchain-core`). Mix them with your own `@tool`s and with MCP clients (`langchain-mcp-adapters`) for Slack/GitHub.
 
-Worked sample: [`examples/langchain_agent/`](../../examples/langchain_agent/).
+Worked sample: [`examples/langchain_agent/`](https://github.com/kjgpta/vectorsmith/tree/main/examples/langchain_agent/).
 
 `from vectorsmith.langchain import load_tools` is the same function.
 

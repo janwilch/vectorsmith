@@ -1,8 +1,8 @@
 # Desktop quickstart
 
-Hub: [documentation home](README.md) · [Claude Desktop](integrations/claude-desktop.md) · [FAQ](faq.md).
+Hub: [documentation home](index.md) · [Claude Desktop](integrations/claude-desktop.md) · [FAQ](faq.md).
 
-VectorSmith is the library. This example is two projects — invoices and tickets — under [`examples/qdrant_invoices`](../examples/qdrant_invoices).
+VectorSmith is the library. This example is two projects — invoices and tickets — under [`examples/qdrant_invoices`](https://github.com/kjgpta/vectorsmith/tree/main/examples/qdrant_invoices).
 
 ```bash
 uv sync

@@ -1,6 +1,6 @@
 # Python API
 
-Hub: [documentation home](README.md). CLI interpolation is different: [CLI](cli.md).
+Hub: [documentation home](index.md). CLI interpolation is different: [CLI](cli.md).
 
 Application code installs **`vectorsmith`**, not `vectorsmith-core`. Do not import `Engine`.
 
@@ -145,4 +145,4 @@ project.issues   # VBxxxx
 | `openai-agents` | OpenAI Agents SDK |
 | `anthropic` | Anthropic SDK |
 
-Guides: [integrations](integrations/README.md). Examples: [examples/](../examples/README.md).
+Guides: [integrations](integrations/README.md). Examples: [examples/](https://github.com/kjgpta/vectorsmith/tree/main/examples/README.md).

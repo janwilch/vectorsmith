@@ -1,6 +1,6 @@
 # Use VectorSmith in an agent
 
-Two paths, one YAML. Hub: [documentation home](README.md) · [Python API](python-api.md) · [integrations](integrations/README.md).
+Two paths, one YAML. Hub: [documentation home](index.md) · [Python API](python-api.md) · [integrations](integrations/README.md).
 
 **Python app** — import one function. No MCP subprocess.
 

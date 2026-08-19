@@ -12,9 +12,9 @@ Write a `tools.yaml`. VectorSmith compiles it into typed, tenant-guarded tools �
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
 [![TDS](https://img.shields.io/badge/tools.yaml-TDS%20v1-7C3AED.svg)](docs/tools-yaml-reference.md)
 [![MCP](https://img.shields.io/badge/MCP-stdio%20%2B%20HTTP-111827.svg)](docs/integrations/README.md)
-[![Docs](https://img.shields.io/badge/docs-start%20here-0F766E.svg)](docs/README.md)
+[![Docs](https://img.shields.io/badge/docs-kjgpta.github.io-0F766E.svg)](https://kjgpta.github.io/vectorsmith/)
 
-[What it is](#why-this-exists) · [How it works](#how-it-works) · [Write YAML](#write-a-tool-not-a-prompt) · [Python](#in-your-agent-python) · [Claude / Codex / Cursor](#in-claude-codex-cursor) · [Try it](#try-it) · [**Docs**](docs/README.md)
+[What it is](#why-this-exists) · [How it works](#how-it-works) · [Write YAML](#write-a-tool-not-a-prompt) · [Python](#in-your-agent-python) · [Claude / Codex / Cursor](#in-claude-codex-cursor) · [Try it](#try-it) · [**Docs**](https://kjgpta.github.io/vectorsmith/)
 
 </div>
 
@@ -278,7 +278,7 @@ Tickets are a second file / second MCP name: `tools.tickets.yaml` → `--name ti
 
 ## Documentation
 
-**[docs/](docs/README.md)** is the full manual (getting started, CLI, Python API, YAML, integrations, FAQ).
+**[kjgpta.github.io/vectorsmith](https://kjgpta.github.io/vectorsmith/)** is the rendered manual (Material for MkDocs). Source is [`docs/`](docs/index.md).
 
 | I want to… | Go here |
 |---|---|

@@ -1,6 +1,6 @@
 # Self-host (claude.ai custom connector)
 
-Hub: [documentation home](README.md) · [CLI](cli.md) · [Deploy](../deploy-templates/README.md).
+Hub: [documentation home](index.md) · [CLI](cli.md) · [Deploy](https://github.com/kjgpta/vectorsmith/blob/main/deploy-templates/README.md).
 
 Streamable HTTP MCP. Endpoint is **`POST /mcp`**. `GET /healthz` returns `{"ok": true}`. Any MCP client can attach the same way.
 
@@ -37,4 +37,4 @@ Also served: `/.well-known/oauth-protected-resource`, `/.well-known/oauth-author
 
 Add the connector in claude.ai (URL `https://vb.example.com/mcp`). Add Slack/GitHub/etc. as **separate** connectors — see [coexistence.md](coexistence.md).
 
-Container / k8s / Cloud Run / Fly: [deploy-templates/](../deploy-templates/README.md).
+Container / k8s / Cloud Run / Fly: [deploy-templates/](https://github.com/kjgpta/vectorsmith/blob/main/deploy-templates/README.md).

@@ -1,6 +1,6 @@
 # LangGraph
 
-Hub: [documentation home](../README.md) · [Python API](../python-api.md) · [LangChain](langchain.md).
+Hub: [documentation home](../index.md) · [Python API](../python-api.md) · [LangChain](langchain.md).
 
 LangGraph talks to LangChain tools. Use the same `load_tools` as [LangChain](langchain.md).
 
@@ -24,7 +24,7 @@ finally:
     await tools.aclose()
 ```
 
-Worked sample: [`examples/langgraph_agent/`](../../examples/langgraph_agent/).
+Worked sample: [`examples/langgraph_agent/`](https://github.com/kjgpta/vectorsmith/tree/main/examples/langgraph_agent/).
 
 ## `StateGraph` + `ToolNode`
 

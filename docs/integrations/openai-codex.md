@@ -1,6 +1,6 @@
 # OpenAI Codex (CLI, IDE, ChatGPT desktop)
 
-Hub: [documentation home](../README.md) · [Integrations](README.md).
+Hub: [documentation home](../index.md) · [Integrations](README.md).
 
 Codex is an MCP host. The ChatGPT desktop app, Codex CLI, and IDE extension share one config. Codex does **not** use Claude’s JSON file.
 

@@ -1,6 +1,6 @@
 # Getting started
 
-Hub: [documentation home](README.md).
+Hub: [documentation home](index.md).
 
 This walkthrough uses the invoice example. Copy `.env.example` and set `QDRANT_URL` to your Qdrant cluster (the committed default is `http://localhost:6333`).
 
@@ -22,7 +22,7 @@ pip install "vectorsmith[qdrant]"
 
 ## 2. Look at a `tools.yaml`
 
-Open [`examples/qdrant_invoices/tools.invoices.yaml`](../examples/qdrant_invoices/tools.invoices.yaml). You will see:
+Open [`examples/qdrant_invoices/tools.invoices.yaml`](https://github.com/kjgpta/vectorsmith/tree/main/examples/qdrant_invoices/tools.invoices.yaml). You will see:
 
 - A **connection** (`backend: qdrant`, URL as `${QDRANT_URL}`)
 - Tools with **kinds** (`search`, `lookup`, `count`)
@@ -67,7 +67,7 @@ uv run vectorsmith serve examples/qdrant_invoices/tools.invoices.yaml --name inv
   --env-file examples/qdrant_invoices/.env.example
 ```
 
-Then paste a config from [`examples/mcp_hosts/`](../examples/mcp_hosts/). Host guides: [Claude Desktop](quickstart-desktop.md), [Claude Code](integrations/claude-code.md), [Codex](integrations/openai-codex.md), [Cursor](integrations/cursor.md).
+Then paste a config from [`examples/mcp_hosts/`](https://github.com/kjgpta/vectorsmith/tree/main/examples/mcp_hosts/). Host guides: [Claude Desktop](quickstart-desktop.md), [Claude Code](integrations/claude-code.md), [Codex](integrations/openai-codex.md), [Cursor](integrations/cursor.md).
 
 Ask: “Which Globex invoices are overdue?”
 
@@ -88,7 +88,7 @@ tools = load_tools(
 agent = create_agent("openai:gpt-4.1", tools)
 ```
 
-Worked apps: [`examples/langchain_agent`](../examples/langchain_agent/), [LangGraph](../examples/langgraph_agent/), [OpenAI Agents](../examples/openai_agents/), [Anthropic](../examples/anthropic_agent/). API: [python-api.md](python-api.md).
+Worked apps: [`examples/langchain_agent`](https://github.com/kjgpta/vectorsmith/tree/main/examples/langchain_agent/), [LangGraph](https://github.com/kjgpta/vectorsmith/tree/main/examples/langgraph_agent/), [OpenAI Agents](https://github.com/kjgpta/vectorsmith/tree/main/examples/openai_agents/), [Anthropic](https://github.com/kjgpta/vectorsmith/tree/main/examples/anthropic_agent/). API: [python-api.md](python-api.md).
 
 ## 6. Tickets (second connector)
 

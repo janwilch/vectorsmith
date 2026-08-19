@@ -1,6 +1,6 @@
 # tools.yaml
 
-Hub: [documentation home](README.md). This page is the **field-by-field contract**. For a walkthrough, see [getting started](getting-started.md).
+Hub: [documentation home](index.md). This page is the **field-by-field contract**. For a walkthrough, see [getting started](getting-started.md).
 
 VectorSmith’s project config is a YAML file. The conventional name is **`tools.yaml`**. You can call it anything (`tools.invoices.yaml`, `billing.yml`) — the CLI and `load_tools` take the path you pass.
 
@@ -18,7 +18,7 @@ vectorsmith validate tools.yaml --env-file .env
 vectorsmith test tools.yaml search_invoices --args '{"query":"Globex","limit":3}'
 ```
 
-Worked files: [`examples/qdrant_invoices/tools.invoices.yaml`](../examples/qdrant_invoices/tools.invoices.yaml), [`tools.tickets.yaml`](../examples/qdrant_invoices/tools.tickets.yaml).
+Worked files: [`examples/qdrant_invoices/tools.invoices.yaml`](https://github.com/kjgpta/vectorsmith/tree/main/examples/qdrant_invoices/tools.invoices.yaml), [`tools.tickets.yaml`](https://github.com/kjgpta/vectorsmith/tree/main/examples/qdrant_invoices/tools.tickets.yaml).
 
 ---
 

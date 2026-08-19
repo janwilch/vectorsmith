@@ -1,6 +1,6 @@
 # Other frameworks
 
-Hub: [documentation home](../README.md) · [Python API](../python-api.md).
+Hub: [documentation home](../index.md) · [Python API](../python-api.md).
 
 Anything that can call an async function with a JSON object can use `connect`. You do not need a first-party adapter. Install the store extra (`vectorsmith[qdrant]`); you do **not** need `langchain`.
 

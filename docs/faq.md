@@ -1,6 +1,6 @@
 # FAQ
 
-Hub: [documentation home](README.md) · [Getting started](getting-started.md) · [CLI](cli.md).
+Hub: [documentation home](index.md) · [Getting started](getting-started.md) · [CLI](cli.md).
 
 ## Install and run
 
@@ -93,4 +93,4 @@ The process **cwd**. Set `cwd` in Desktop/Codex. Cap 10 pending; 30-day expiry.
 
 ## Still stuck
 
-Repro with `validate --json` and a redacted `tools.yaml`. Security issues: [SECURITY.md](../SECURITY.md), not a public GitHub issue.
+Repro with `validate --json` and a redacted `tools.yaml`. Security issues: [SECURITY.md](https://github.com/kjgpta/vectorsmith/blob/main/SECURITY.md), not a public GitHub issue.

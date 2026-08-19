@@ -1,6 +1,6 @@
 # How VectorSmith is put together
 
-Hub: [documentation home](README.md).
+Hub: [documentation home](index.md).
 
 VectorSmith is a **compiler**, not a gateway and not a second copy of your database.
 

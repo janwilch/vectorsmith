@@ -1,6 +1,6 @@
 # Integrations
 
-Hub: [documentation home](../README.md) · [Python API](../python-api.md) · [Getting started](../getting-started.md).
+Hub: [documentation home](../index.md) · [Python API](../python-api.md) · [Getting started](../getting-started.md).
 
 Two ways to use a `tools.yaml`. Pick the one your product supports.
 
@@ -19,7 +19,7 @@ Same YAML either way. Do not import `Engine`. Field-by-field: [tools.yaml](../to
 - [Cursor](cursor.md)
 - [claude.ai custom connector](../quickstart-selfhost.md) (`serve --http`)
 
-Copy-paste configs: [`examples/mcp_hosts/`](../../examples/mcp_hosts/).
+Copy-paste configs: [`examples/mcp_hosts/`](https://github.com/kjgpta/vectorsmith/tree/main/examples/mcp_hosts/).
 
 ## Agent frameworks
 

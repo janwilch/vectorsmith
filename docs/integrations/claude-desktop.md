@@ -1,6 +1,6 @@
 # Claude Desktop
 
-Hub: [documentation home](../README.md) · [Integrations](README.md).
+Hub: [documentation home](../index.md) · [Integrations](README.md).
 
 Claude Desktop is an MCP host. It cannot `import vectorsmith`. It **spawns** `vectorsmith serve` and lists the tools under **Connectors**.
 

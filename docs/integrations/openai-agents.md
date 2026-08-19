@@ -1,6 +1,6 @@
 # OpenAI Agents SDK
 
-Hub: [documentation home](../README.md) · [Python API](../python-api.md). For the **Codex CLI / IDE** (MCP host), see [OpenAI Codex](openai-codex.md).
+Hub: [documentation home](../index.md) · [Python API](../python-api.md). For the **Codex CLI / IDE** (MCP host), see [OpenAI Codex](openai-codex.md).
 
 In-process Python.
 
@@ -34,4 +34,4 @@ Equivalent: `connect("tools.yaml").as_openai_agents()`.
 
 Optional fields in `tools.yaml` are not OpenAI strict-mode schemas; the adapter sets `strict_json_schema=False`.
 
-Worked sample: [`examples/openai_agents/`](../../examples/openai_agents/).
+Worked sample: [`examples/openai_agents/`](https://github.com/kjgpta/vectorsmith/tree/main/examples/openai_agents/).

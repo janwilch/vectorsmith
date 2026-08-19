@@ -1,6 +1,6 @@
 # Anthropic Messages API
 
-Hub: [documentation home](../README.md) · [Python API](../python-api.md). For **Claude Desktop** or **Claude Code**, those apps spawn `serve` — [Desktop](claude-desktop.md), [Claude Code](claude-code.md).
+Hub: [documentation home](../index.md) · [Python API](../python-api.md). For **Claude Desktop** or **Claude Code**, those apps spawn `serve` — [Desktop](claude-desktop.md), [Claude Code](claude-code.md).
 
 In-process Python.
 
@@ -44,4 +44,4 @@ finally:
 
 `vs.tools` is the list of `{name, description, input_schema}` dicts. `vs.execute` runs the compiled YAML tool.
 
-Worked sample (full loop): [`examples/anthropic_agent/`](../../examples/anthropic_agent/).
+Worked sample (full loop): [`examples/anthropic_agent/`](https://github.com/kjgpta/vectorsmith/tree/main/examples/anthropic_agent/).
