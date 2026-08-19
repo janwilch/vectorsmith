@@ -22,7 +22,7 @@ uv run vectorsmith serve examples/qdrant_invoices/tools.invoices.yaml --name inv
   --http 0.0.0.0:8080 --auth builtin --public-url https://vb.example.com
 ```
 
-The process prints an access secret once. Builtin OAuth is PKCE S256, DCR, opaque tokens in `~/.vectorsmith/authstate.db` (mode 0600).
+The process writes an access secret once to `~/.vectorsmith/access-secret.once` (mode 0600). Builtin OAuth is PKCE S256, DCR, opaque tokens in `~/.vectorsmith/authstate.db` (mode 0600).
 
 ```bash
 uv run vectorsmith auth rotate-secret

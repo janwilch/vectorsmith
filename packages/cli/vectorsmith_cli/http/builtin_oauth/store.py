@@ -97,6 +97,15 @@ class AuthStore:
         conn.close()
         return secret
 
+    def write_secret_once(self, secret: str) -> Path:
+        """Write the one-time plaintext secret next to the DB (mode 0600). Do not log it."""
+        dest = self.path.parent / "access-secret.once"
+        fd = os.open(dest, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(secret)
+            fh.write("\n")
+        return dest
+
     def revoke_all(self) -> None:
         conn = self._connect()
         conn.execute("DELETE FROM tokens")

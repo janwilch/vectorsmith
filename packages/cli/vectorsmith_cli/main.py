@@ -142,7 +142,8 @@ def auth(
     store = AuthStore()
     if action == "rotate-secret":
         secret = store.rotate_secret()
-        print(f"New access secret (shown once): {secret}", file=__import__("sys").stderr)
+        dest = store.write_secret_once(secret)
+        print(f"New access secret written to {dest} (mode 0600)", file=__import__("sys").stderr)
         return
     if action == "revoke":
         store.revoke_all()

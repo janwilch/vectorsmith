@@ -50,7 +50,8 @@ def serve_http(
     if auth == "builtin":
         secret = store.bootstrap_secret()
         if secret:
-            print(f"Access secret (shown once): {secret}", file=sys.stderr)
+            dest = store.write_secret_once(secret)
+            print(f"Access secret written to {dest} (mode 0600; shown once)", file=sys.stderr)
     app = build_app(
         engine=engine,
         enable_define=enable_define,

@@ -69,3 +69,11 @@ def test_initialize_server_info_user_name(tmp_path: Path) -> None:
     info = res.json()["result"]["serverInfo"]
     assert info["name"] == "invoices"
     assert info["title"] == "VectorSmith"
+
+
+def test_write_secret_once_is_0600(tmp_path: Path) -> None:
+    store = AuthStore(tmp_path / "auth.db")
+    secret = store.rotate_secret()
+    dest = store.write_secret_once(secret)
+    assert dest.read_text(encoding="utf-8").strip() == secret
+    assert dest.stat().st_mode & 0o777 == 0o600

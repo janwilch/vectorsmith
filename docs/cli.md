@@ -98,7 +98,7 @@ vectorsmith serve tools.yaml --http 0.0.0.0:8080 --auth builtin --public-url htt
 
 `--watch` is **ignored** on HTTP. Restart after YAML edits.
 
-`GET /healthz` → `{"ok": true}`. `builtin` OAuth: PKCE, DCR, tokens in `~/.vectorsmith/authstate.db` (mode 0600). First start prints an access secret once.
+`GET /healthz` → `{"ok": true}`. `builtin` OAuth: PKCE, DCR, tokens in `~/.vectorsmith/authstate.db` (mode 0600). First start writes the access secret once to `~/.vectorsmith/access-secret.once` (mode 0600) — it is not printed.
 
 Exit: `2` if `builtin` lacks `https` `--public-url` · `3` if `--auth none` is not loopback.
 
@@ -140,7 +140,7 @@ vectorsmith auth rotate-secret
 vectorsmith auth revoke
 ```
 
-Builtin HTTP OAuth admin. `rotate-secret` prints a new secret once. `revoke` drops stored tokens.
+Builtin HTTP OAuth admin. `rotate-secret` writes a new secret once to `~/.vectorsmith/access-secret.once` (mode 0600). `revoke` drops stored tokens.
 
 ---
 
