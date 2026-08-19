@@ -120,8 +120,8 @@ class QdrantAdapter(VectorBackendAdapter):
     async def search(self, req: SearchRequest) -> RowBatch:
         client = self._sdk()
         qfilter = self.compile_filter(
-            req.filter_ir if isinstance(req.filter_ir, (And, Or, Cond)) else req.filter_ir
-        )  # type: ignore[arg-type]
+            req.filter_ir if isinstance(req.filter_ir, (And, Or, Cond)) else None
+        )
         from qdrant_client.http import models as qm
 
         native = None

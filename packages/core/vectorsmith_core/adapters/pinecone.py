@@ -39,7 +39,7 @@ class PineconeAdapter(VectorBackendAdapter):
         if self._index is not None:
             return self._index
         try:
-            from pinecone import Pinecone  # type: ignore[import-not-found]
+            from pinecone import Pinecone
         except ImportError as exc:
             raise BackendUnreachable(
                 detail="pinecone extra not installed: pip install vectorsmith-core[pinecone]"

@@ -199,7 +199,9 @@ class Engine:
 
 
 async def _build_adapter(spec: object, creds: dict[str, str]) -> Any:
-    backend = spec.backend
+    backend = getattr(spec, "backend", None)
+    if not isinstance(backend, str):
+        raise InvalidArgumentsError(detail="connection is missing backend")
     if backend == "qdrant":
         from vectorsmith_core.adapters.qdrant import QdrantAdapter
 

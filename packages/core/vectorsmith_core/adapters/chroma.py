@@ -47,7 +47,7 @@ class ChromaAdapter(VectorBackendAdapter):
         if self._client is not None:
             return self._client
         try:
-            import chromadb  # type: ignore[import-not-found]
+            import chromadb
         except ImportError as exc:
             raise BackendUnreachable(
                 detail="chroma extra not installed: pip install vectorsmith-core[chroma]"

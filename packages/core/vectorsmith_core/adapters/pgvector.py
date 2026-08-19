@@ -21,21 +21,19 @@ class PgvectorAdapter(VectorBackendAdapter):
         self._pool: Any = None
 
     def _ident(self) -> Any:
-        from psycopg import sql  # type: ignore[import-not-found]
-
+        from psycopg import sql
         table = self.spec.table or "invoices"
         return sql.Identifier(*table.split(".")) if "." in table else sql.Identifier(table)
 
     def compile_filter(self, node: IRNode | None) -> object:
-        from psycopg import sql  # type: ignore[import-not-found]
-
+        from psycopg import sql
         params: list[Any] = []
         clause = _sql_clause(node, params)
         return {"sql": clause, "params": params, "composed": sql.SQL("{}").format(clause)}
 
     async def _conn(self) -> Any:
         try:
-            from psycopg_pool import AsyncConnectionPool  # type: ignore[import-not-found]
+            from psycopg_pool import AsyncConnectionPool
         except ImportError as exc:
             raise BackendUnreachable(
                 detail="pgvector extra not installed: pip install vectorsmith-core[pgvector]"
@@ -66,8 +64,7 @@ class PgvectorAdapter(VectorBackendAdapter):
             )
         if req.vector is None:
             return await self._scroll(req)
-        from psycopg import sql  # type: ignore[import-not-found]
-
+        from psycopg import sql
         compiled = self.compile_filter(
             req.filter_ir if isinstance(req.filter_ir, (And, Or, Cond)) else None
         )
@@ -94,8 +91,7 @@ class PgvectorAdapter(VectorBackendAdapter):
             raise BackendUnreachable(detail=str(exc)) from exc
 
     async def _scroll(self, req: SearchRequest) -> RowBatch:
-        from psycopg import sql  # type: ignore[import-not-found]
-
+        from psycopg import sql
         compiled = self.compile_filter(
             req.filter_ir if isinstance(req.filter_ir, (And, Or, Cond)) else None
         )
@@ -117,8 +113,7 @@ class PgvectorAdapter(VectorBackendAdapter):
             raise BackendUnreachable(detail=str(exc)) from exc
 
     async def count(self, collection: str, filter_ir: IRNode | None) -> int:
-        from psycopg import sql  # type: ignore[import-not-found]
-
+        from psycopg import sql
         _ = collection
         compiled = self.compile_filter(filter_ir)
         params = list(compiled["params"]) if isinstance(compiled, dict) else []
@@ -148,8 +143,7 @@ class PgvectorAdapter(VectorBackendAdapter):
 
 
 def _sql_clause(node: IRNode | None, params: list[Any]) -> Any:
-    from psycopg import sql  # type: ignore[import-not-found]
-
+    from psycopg import sql
     if node is None:
         return sql.SQL("TRUE")
     if isinstance(node, And):
@@ -176,9 +170,17 @@ def _sql_clause(node: IRNode | None, params: list[Any]) -> Any:
         params.append(node.value)
         return col + ops[node.op]
     if node.op == "in":
-        params.append(list(node.value) if not isinstance(node.value, list) else node.value)
+        params.append(_as_list(node.value))
         return col + sql.SQL(" = ANY(%s)")
     if node.op == "nin":
-        params.append(list(node.value) if not isinstance(node.value, list) else node.value)
+        params.append(_as_list(node.value))
         return col + sql.SQL(" <> ALL(%s)")
     return sql.SQL("TRUE")
+
+
+def _as_list(value: object) -> list[object]:
+    if isinstance(value, list):
+        return value
+    if isinstance(value, (tuple, set)):
+        return list(value)
+    return [value]

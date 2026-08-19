@@ -34,8 +34,8 @@ class WeaviateAdapter(VectorBackendAdapter):
         if self._client is not None:
             return self._client
         try:
-            import weaviate  # type: ignore[import-not-found]
-            from weaviate.auth import AuthApiKey  # type: ignore[import-not-found]
+            import weaviate
+            from weaviate.auth import AuthApiKey
         except ImportError as exc:
             raise BackendUnreachable(
                 detail="weaviate extra not installed: pip install vectorsmith-core[weaviate]"

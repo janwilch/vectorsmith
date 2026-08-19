@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import ValidationError
 
 from vectorsmith_core.compilepkg.validator import validate
 from vectorsmith_core.tds.models import StaticFilter, ToolSpec
+
+if TYPE_CHECKING:
+    from vectorsmith_core.api import Project, ToolDraft
 
 READ_ONLY = frozenset({"search", "lookup", "count", "scroll", "pipeline"})
 
@@ -31,7 +34,7 @@ def _issues_from_pydantic(exc: ValidationError) -> list[Any]:
     return out
 
 
-def draft_tool(project: object, provenance: dict[str, Any], proposed: dict[str, Any]) -> Any:
+def draft_tool(project: Project, provenance: dict[str, Any], proposed: dict[str, Any]) -> ToolDraft:
     """Validate ``proposed`` as a ToolSpec. Never mutates ``project``."""
     from vectorsmith_core.api import Issue, ToolDraft
 
@@ -86,7 +89,7 @@ def draft_tool(project: object, provenance: dict[str, Any], proposed: dict[str, 
     )
 
 
-def promote_draft(draft: Any, project: object) -> ToolSpec:
+def promote_draft(draft: ToolDraft, project: Project) -> ToolSpec:
     """Re-validate and return the ToolSpec to insert. Refuses on error issues."""
     from vectorsmith_core.api import Issue
     from vectorsmith_core.errors import TDSValidationError

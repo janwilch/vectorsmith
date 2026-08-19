@@ -104,7 +104,12 @@ class EnvCredentialResolver:
     async def resolve(self, name: str, spec: object) -> ResolvedCredentials:
         needed: list[str] = []
         values: dict[str, str] = {}
-        raw = spec.model_dump() if hasattr(spec, "model_dump") else dict(spec)  # type: ignore[arg-type]
+        if hasattr(spec, "model_dump"):
+            raw = dict(spec.model_dump())
+        elif isinstance(spec, Mapping):
+            raw = dict(spec)
+        else:
+            raise TypeError(f"cannot resolve credentials from {type(spec)!r}")
         for key, val in raw.items():
             if isinstance(val, str) and val.startswith("${") and val.endswith("}"):
                 inner = val[2:-1]

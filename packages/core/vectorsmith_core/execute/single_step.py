@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from vectorsmith_core.adapters.base import SearchRequest
 from vectorsmith_core.errors import InvalidArgumentsError
@@ -18,7 +18,7 @@ MAX_BYTES = 100_000
 
 
 def _validate_args(schema: dict[str, Any], args: dict[str, Any]) -> dict[str, Any]:
-    import jsonschema  # type: ignore[import-untyped]
+    import jsonschema
 
     props = schema.get("inputSchema") or schema
     try:
@@ -47,7 +47,7 @@ async def execute_single(
         for p in (compiled.mcp_schema.get("inputSchema") or {}).get("required", [])
     }
     bound_params = bind(
-        merge_and(*plan.param_conds) if plan.param_conds else None,  # type: ignore[arg-type]
+        merge_and(*plan.param_conds) if plan.param_conds else None,
         args,
         required=frozenset(required) - {plan.query_param or ""},
     )
@@ -62,14 +62,13 @@ async def execute_single(
         raise InvalidArgumentsError(detail="collection is required")
 
     warnings: list[str] = []
-    search_mode: str = "none"
+    search_mode: Literal["dense", "hybrid", "none"] = "none"
     vector: list[float] | None = None
     query_text = args.get(plan.query_param) if plan.query_param else None
 
     if plan.kind == "meta":
         names = await adapter.list_collections()
         rows: list[dict[str, Any]] = []
-        warnings: list[str] = []
         for name in names:
             try:
                 n = await adapter.count(name, None)
@@ -89,7 +88,7 @@ async def execute_single(
         model = plan.embedding or "fastembed/BAAI/bge-small-en-v1.5"
         vectors = await embed.embed([str(query_text)], model)
         vector = vectors[0]
-        search_mode = plan.mode
+        search_mode = "hybrid" if plan.mode == "hybrid" else "dense"
     elif plan.query_required:
         raise InvalidArgumentsError(detail=f"missing required argument '{plan.query_param}'")
 

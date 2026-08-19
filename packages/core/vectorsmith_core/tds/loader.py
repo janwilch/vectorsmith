@@ -33,7 +33,9 @@ def _safe_load(text: str) -> object:
 
     anchors = 0
 
-    def _compose_node(self: yaml.SafeLoader, parent: object, index: object) -> object:
+    def _compose_node(
+        self: yaml.SafeLoader, parent: yaml.nodes.Node | None, index: int
+    ) -> yaml.nodes.Node | None:
         nonlocal anchors
         node = yaml.SafeLoader.compose_node(self, parent, index)
         if getattr(node, "anchor", None):
@@ -42,7 +44,7 @@ def _safe_load(text: str) -> object:
                 raise YamlSafetyError("YAML exceeds 100 anchors")
         return node
 
-    _Loader.compose_node = _compose_node  # type: ignore[method-assign]
+    _Loader.compose_node = _compose_node  # type: ignore[method-assign, assignment]
     data = yaml.load(text, Loader=_Loader)  # noqa: S506 — SafeLoader subclass
     _assert_depth(data, 0)
     return data

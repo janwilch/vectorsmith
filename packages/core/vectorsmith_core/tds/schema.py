@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from vectorsmith_core.tds.models import TDSFile
 
 SCHEMA_PATH = Path(__file__).with_name("schema_v1.json")
 
 
-def generate_schema() -> dict:
+def generate_schema() -> dict[str, Any]:
     return TDSFile.model_json_schema()
 
 

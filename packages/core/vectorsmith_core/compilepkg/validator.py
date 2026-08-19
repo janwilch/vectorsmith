@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any
+from collections.abc import Set as AbstractSet
+from typing import Any, Literal
 
 from vectorsmith_core.adapters.capabilities import CAPS_BY_BACKEND
 from vectorsmith_core.tds.models import (
@@ -14,9 +15,6 @@ from vectorsmith_core.tds.models import (
     ToolSpec,
     is_table_mode,
 )
-
-if TYPE_CHECKING:
-    pass
 
 RESERVED = frozenset(
     {
@@ -50,7 +48,7 @@ def _issue(
     code: str,
     message: str,
     *,
-    severity: str = "error",
+    severity: Literal["error", "warning"] = "error",
     tool: str | None = None,
     path: str | None = None,
 ) -> Any:
@@ -103,7 +101,7 @@ def _conn_for(tds: TDSFile, tool: ToolSpec) -> object | None:
 def _validate_tool(
     tds: TDSFile,
     tool: ToolSpec,
-    reserved: set[str],
+    reserved: AbstractSet[str],
     live_sparse: dict[str, bool] | None,
 ) -> list[Any]:
     issues: list[Any] = []

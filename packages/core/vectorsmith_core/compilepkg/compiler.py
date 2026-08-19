@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from vectorsmith_core.ir.filter import Cond, ParamRef, parse_ir
-from vectorsmith_core.tds.models import ParamSpec, ToolSpec
+from vectorsmith_core.tds.models import ParamSpec, RetrieveStep, ToolSpec
 
 _JSON_TYPE = {
     "keyword": "string",
@@ -114,7 +114,8 @@ def compile_tool(tool: ToolSpec) -> tuple[dict[str, Any], ExecutionPlan]:
     query = tool.query
     retrieve = None
     if tool.steps:
-        retrieve = tool.steps[0].retrieve  # type: ignore[attr-defined]
+        first = tool.steps[0]
+        retrieve = first.retrieve if isinstance(first, RetrieveStep) else None
     target = tool.target or (retrieve.target if retrieve else None)
     fetch = retrieve.fetch if retrieve else None
     plan = ExecutionPlan(

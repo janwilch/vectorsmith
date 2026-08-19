@@ -35,7 +35,7 @@ SCHEMA_V1 = {
 
 def to_schema_json(report: dict[str, Any]) -> dict[str, Any]:
     """Drop records/ids/vectors/creds and self-validate the envelope."""
-    cleaned = {
+    cleaned: dict[str, Any] = {
         "connection": report.get("connection"),
         "backend": report.get("backend"),
         "redacted": bool(report.get("redacted")),
@@ -56,7 +56,7 @@ def to_schema_json(report: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_schema(report: dict[str, Any]) -> None:
-    import jsonschema  # type: ignore[import-untyped]
+    import jsonschema
 
     jsonschema.validate(report, SCHEMA_V1)
 

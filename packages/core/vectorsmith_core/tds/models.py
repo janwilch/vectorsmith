@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal, Union
+from typing import Annotated, Any, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
@@ -137,7 +137,7 @@ class FetchSpec(_Base):
 class RetrieveBody(_Base):
     target: Target
     query: QuerySpec | None = None
-    filter: dict | None = None
+    filter: dict[str, Any] | None = None
     fetch: FetchSpec = FetchSpec()
 
 

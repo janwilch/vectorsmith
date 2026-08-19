@@ -87,7 +87,7 @@ class _ToAst(Transformer[Token, ExprNode]):
         i = 0
         while i < len(rest):
             op = str(rest[i])
-            node = Binary(op, node, rest[i + 1])  # type: ignore[arg-type]
+            node = Binary(op, node, rest[i + 1])
             i += 2
         return node
 

@@ -83,7 +83,7 @@ def synthesize(tds: TDSFile, *, sparse: dict[str, bool] | None = None) -> TDSFil
                             ),
                             parameters=extra_params,
                             static_filters=static,
-                            **({"output": output} if output is not None else {}),
+                            output=output if output is not None else OutputSpec(),
                         )
                     )
                 )

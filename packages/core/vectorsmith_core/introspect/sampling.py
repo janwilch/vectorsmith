@@ -29,7 +29,7 @@ def infer_fields(
         types: dict[str, int] = info["types"]
         present = info["present"]
         null_rate = 1.0 - (present / n)
-        majority = max(types, key=types.get) if types else "unknown"
+        majority = max(types, key=lambda k: types[k]) if types else "unknown"
         share = (types.get(majority, 0) / present) if present else 0.0
         dtype = majority if share >= TYPE_MAJORITY else "unknown"
         if dtype == "keyword":

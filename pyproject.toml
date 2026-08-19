@@ -26,6 +26,7 @@ dev = [
     "testcontainers>=4.0",
     "ruff>=0.6",
     "mypy>=1.11",
+    "types-PyYAML>=6.0",
     "import-linter>=2.1",
     "langchain-core>=0.3",
 ]

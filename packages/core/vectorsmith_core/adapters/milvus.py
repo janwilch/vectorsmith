@@ -56,7 +56,7 @@ class MilvusAdapter(VectorBackendAdapter):
 
     def _sdk(self) -> Any:
         try:
-            from pymilvus import MilvusClient  # type: ignore[import-not-found]
+            from pymilvus import MilvusClient
         except ImportError as exc:
             raise BackendUnreachable(
                 detail="milvus extra not installed: pip install vectorsmith-core[milvus]"
