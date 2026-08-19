@@ -19,8 +19,8 @@ uv run lint-imports
 
 | Path | Role |
 |---|---|
-| `packages/core` | `vectorsmith-core` — TDS, compiler, adapters |
-| `packages/cli` | `vectorsmith` — CLI + `load_tools` / `connect` |
+| `packages/core` | `vectorsmith_core` (unpublished; bundled into the `vectorsmith` wheel) |
+| `packages/cli` | Published **`vectorsmith`** — CLI + `load_tools` / `connect` |
 | `docs/` | User documentation |
 | `examples/` | Runnable samples |
 | `tests/unit` | Fast tests (CI) |
@@ -47,23 +47,23 @@ Keep those three in sync. After a user-visible change, add a note to `CHANGELOG.
 
 ## Publishing (maintainers)
 
-Source: [github.com/kjgpta/vectorsmith](https://github.com/kjgpta/vectorsmith). Two packages go to PyPI together: **`vectorsmith-core`** then **`vectorsmith`** (the latter depends on the former). Do not use an API token; the [Release](.github/workflows/release.yml) workflow uses [trusted publishing](https://docs.pypi.org/trusted-publishers/).
+Source: [github.com/kjgpta/vectorsmith](https://github.com/kjgpta/vectorsmith). **One** PyPI project: [`vectorsmith`](https://pypi.org/project/vectorsmith/). The compiler (`vectorsmith_core`) is bundled into that wheel; do not publish `vectorsmith-core`. Do not use an API token; the [Release](.github/workflows/release.yml) workflow uses [trusted publishing](https://docs.pypi.org/trusted-publishers/).
 
 ### One-time setup
 
 1. Create a [PyPI](https://pypi.org/account/register/) account with 2FA (required).
 2. Confirm the GitHub Actions environment `pypi` exists on this repo (the workflow already names it).
-3. On PyPI, open **Account settings → Publishing** and add a **pending** publisher **twice** (once per project), with the same GitHub fields:
+3. On PyPI, open **Account settings → Publishing** and add **one** pending publisher:
 
    | Field | Value |
    |---|---|
-   | PyPI project name | `vectorsmith-core` then `vectorsmith` |
+   | PyPI project name | `vectorsmith` |
    | Owner | `kjgpta` |
    | Repository | `vectorsmith` |
    | Workflow name | `release.yml` |
    | Environment name | `pypi` |
 
-   A pending publisher does **not** reserve the name until the first successful upload. Publish soon after adding both.
+   A pending publisher does **not** reserve the name until the first successful upload. Publish soon after adding it. If you already added a pending publisher for `vectorsmith-core`, delete it.
 
 ### Each release
 
@@ -71,7 +71,7 @@ Source: [github.com/kjgpta/vectorsmith](https://github.com/kjgpta/vectorsmith). 
 2. `uv lock` if you changed dependencies. Push to `main`.
 3. Dry-run: **Actions → release → Run workflow** with `dry_run` checked (build + tests, no upload).
 4. Tag and push: `git tag v0.1.0 && git push origin v0.1.0` (or **Run workflow** with `dry_run` unchecked). A `v*` tag always publishes.
-5. Confirm [pypi.org/project/vectorsmith](https://pypi.org/project/vectorsmith/) and [vectorsmith-core](https://pypi.org/project/vectorsmith-core/). Then `pip install "vectorsmith[qdrant]"` in a fresh venv.
+5. Confirm [pypi.org/project/vectorsmith](https://pypi.org/project/vectorsmith/). Then `pip install "vectorsmith[qdrant]"` in a fresh venv.
 
 ## Code of conduct
 

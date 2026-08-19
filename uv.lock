@@ -4358,12 +4358,17 @@ version = "0.1.0"
 source = { editable = "packages/cli" }
 dependencies = [
     { name = "argon2-cffi" },
+    { name = "httpx" },
+    { name = "jsonschema" },
+    { name = "lark" },
     { name = "mcp" },
+    { name = "polars" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
     { name = "ruamel-yaml" },
     { name = "starlette" },
     { name = "typer" },
     { name = "uvicorn" },
-    { name = "vectorsmith-core" },
     { name = "watchfiles" },
 ]
 
@@ -4372,7 +4377,8 @@ anthropic = [
     { name = "anthropic" },
 ]
 chroma = [
-    { name = "vectorsmith-core", extra = ["chroma", "embed"] },
+    { name = "chromadb" },
+    { name = "fastembed" },
 ]
 langchain = [
     { name = "langchain-core" },
@@ -4382,45 +4388,61 @@ langgraph = [
     { name = "langgraph" },
 ]
 milvus = [
-    { name = "vectorsmith-core", extra = ["embed", "milvus"] },
+    { name = "fastembed" },
+    { name = "pymilvus" },
 ]
 openai-agents = [
     { name = "openai-agents" },
 ]
 pgvector = [
-    { name = "vectorsmith-core", extra = ["embed", "pgvector"] },
+    { name = "fastembed" },
+    { name = "psycopg", extra = ["binary", "pool"] },
 ]
 pinecone = [
-    { name = "vectorsmith-core", extra = ["embed", "pinecone"] },
+    { name = "fastembed" },
+    { name = "pinecone" },
 ]
 qdrant = [
-    { name = "vectorsmith-core", extra = ["embed", "qdrant"] },
+    { name = "fastembed" },
+    { name = "qdrant-client" },
 ]
 weaviate = [
-    { name = "vectorsmith-core", extra = ["embed", "weaviate"] },
+    { name = "fastembed" },
+    { name = "weaviate-client" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "anthropic", marker = "extra == 'anthropic'", specifier = ">=0.40" },
     { name = "argon2-cffi" },
+    { name = "chromadb", marker = "extra == 'chroma'", specifier = ">=0.5" },
+    { name = "fastembed", marker = "extra == 'chroma'", specifier = ">=0.3" },
+    { name = "fastembed", marker = "extra == 'milvus'", specifier = ">=0.3" },
+    { name = "fastembed", marker = "extra == 'pgvector'", specifier = ">=0.3" },
+    { name = "fastembed", marker = "extra == 'pinecone'", specifier = ">=0.3" },
+    { name = "fastembed", marker = "extra == 'qdrant'", specifier = ">=0.3" },
+    { name = "fastembed", marker = "extra == 'weaviate'", specifier = ">=0.3" },
+    { name = "httpx" },
+    { name = "jsonschema" },
     { name = "langchain-core", marker = "extra == 'langchain'", specifier = ">=0.3" },
     { name = "langchain-core", marker = "extra == 'langgraph'", specifier = ">=0.3" },
     { name = "langgraph", marker = "extra == 'langgraph'", specifier = ">=0.2" },
+    { name = "lark" },
     { name = "mcp", specifier = ">=1.2" },
     { name = "openai-agents", marker = "extra == 'openai-agents'", specifier = ">=0.2" },
+    { name = "pinecone", marker = "extra == 'pinecone'", specifier = ">=5.0" },
+    { name = "polars", specifier = ">=1.0" },
+    { name = "psycopg", extras = ["binary", "pool"], marker = "extra == 'pgvector'", specifier = ">=3.2" },
+    { name = "pydantic", specifier = ">=2.7" },
+    { name = "pymilvus", marker = "extra == 'milvus'", specifier = ">=2.4" },
+    { name = "pyyaml" },
+    { name = "qdrant-client", marker = "extra == 'qdrant'", specifier = ">=1.9" },
     { name = "ruamel-yaml" },
     { name = "starlette" },
     { name = "typer" },
     { name = "uvicorn" },
-    { name = "vectorsmith-core", editable = "packages/core" },
-    { name = "vectorsmith-core", extras = ["chroma", "embed"], marker = "extra == 'chroma'", editable = "packages/core" },
-    { name = "vectorsmith-core", extras = ["milvus", "embed"], marker = "extra == 'milvus'", editable = "packages/core" },
-    { name = "vectorsmith-core", extras = ["pgvector", "embed"], marker = "extra == 'pgvector'", editable = "packages/core" },
-    { name = "vectorsmith-core", extras = ["pinecone", "embed"], marker = "extra == 'pinecone'", editable = "packages/core" },
-    { name = "vectorsmith-core", extras = ["qdrant", "embed"], marker = "extra == 'qdrant'", editable = "packages/core" },
-    { name = "vectorsmith-core", extras = ["weaviate", "embed"], marker = "extra == 'weaviate'", editable = "packages/core" },
     { name = "watchfiles" },
+    { name = "weaviate-client", marker = "extra == 'weaviate'", specifier = ">=4.0" },
 ]
 provides-extras = ["qdrant", "pgvector", "chroma", "pinecone", "weaviate", "milvus", "langchain", "langgraph", "openai-agents", "anthropic"]
 

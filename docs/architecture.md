@@ -56,10 +56,10 @@ You do not copy `inputSchema` into the LLM SDK. You do not merge VectorSmith int
 
 ## Packages
 
-| Package | Role |
+| | Role |
 |---|---|
-| `vectorsmith` | CLI + public `connect` / `load_tools` |
-| `vectorsmith-core` | TDS models, compiler, adapters — used by the CLI; `load_project` for authoring/CI |
+| **`vectorsmith`** (PyPI) | CLI + public `connect` / `load_tools`. Ships `vectorsmith_core` in the same wheel. |
+| `packages/core` | Source for the compiler; not a PyPI project. `load_project` is for authoring/CI. |
 
 `vectorsmith_core` must not import the CLI (import-linter).
 

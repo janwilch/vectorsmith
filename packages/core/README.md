@@ -1,9 +1,11 @@
-# vectorsmith-core
+# `vectorsmith_core` (unpublished)
 
-Compiler, validators, and store adapters for VectorSmith `tools.yaml` files.
+Compiler, validators, and store adapters. This tree is a workspace package for development and import-linter; it is **not** published to PyPI.
 
-Application code should depend on [`vectorsmith`](https://pypi.org/project/vectorsmith/), not this package directly, unless you are authoring or validating TDS files:
+`pip install vectorsmith` ships this module inside the `vectorsmith` wheel. Application code still uses:
 
 ```python
-from vectorsmith_core import load_project
+from vectorsmith import load_tools, connect
 ```
+
+Authoring / CI can import `load_project` from `vectorsmith_core` after installing `vectorsmith`.

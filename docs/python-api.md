@@ -2,7 +2,7 @@
 
 Hub: [documentation home](index.md). CLI interpolation is different: [CLI](cli.md).
 
-Application code installs **`vectorsmith`**, not `vectorsmith-core`. Do not import `Engine`.
+Application code installs **`vectorsmith`**. Do not import `Engine`.
 
 ```bash
 pip install "vectorsmith[qdrant]"                 # connect()
@@ -121,7 +121,7 @@ Requires `vectorsmith[anthropic]` (or `pip install anthropic` plus `vectorsmith[
 
 ## Authoring (`vectorsmith_core`)
 
-For compilers, CI, and `validate`-like scripts — **not** for binding schemas onto an LLM:
+The compiler module ships **inside** `pip install vectorsmith` (not a second PyPI project). For CI and `validate`-like scripts — **not** for binding schemas onto an LLM:
 
 ```python
 from vectorsmith_core import load_project

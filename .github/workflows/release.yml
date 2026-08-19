@@ -26,7 +26,6 @@ jobs:
       - run: uv sync --group dev --frozen
       - run: uv run ruff check .
       - run: uv run pytest -m "not conformance" --tb=short
-      - run: uv build --package vectorsmith-core
       - run: uv build --package vectorsmith
       - name: Publish to PyPI
         if: ${{ github.event_name == 'push' || inputs.dry_run == false }}

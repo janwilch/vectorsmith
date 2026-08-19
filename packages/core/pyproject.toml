@@ -8,6 +8,7 @@ license = { text = "Apache-2.0" }
 authors = [{ name = "VectorSmith contributors" }]
 keywords = ["mcp", "agents", "vector-database", "qdrant", "tools.yaml"]
 classifiers = [
+    "Private :: Do Not Upload",
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",

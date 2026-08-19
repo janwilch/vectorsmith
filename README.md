@@ -303,7 +303,7 @@ uv run pytest -m "not conformance"
 uv run lint-imports
 ```
 
-Workspace: `packages/core` (`vectorsmith-core`) · `packages/cli` (`vectorsmith`). Core must not import the CLI.
+Workspace: `packages/core` (`vectorsmith_core`, unpublished) · `packages/cli` (published `vectorsmith`). Core must not import the CLI.
 
 [Contributing](CONTRIBUTING.md) · [Support](SUPPORT.md) · [Security](SECURITY.md) · [Changelog](CHANGELOG.md) · [Code of conduct](CODE_OF_CONDUCT.md)
 
