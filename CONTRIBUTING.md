@@ -70,7 +70,7 @@ Source: [github.com/kjgpta/vectorsmith](https://github.com/kjgpta/vectorsmith). 
 1. Versions match in `packages/core/pyproject.toml`, `packages/cli/pyproject.toml`, and `ENGINE_VERSION`. Changelog is updated.
 2. `uv lock` if you changed dependencies. Push to `main`.
 3. Dry-run: **Actions → release → Run workflow** with `dry_run` checked (build + tests, no upload).
-4. Tag and push: `git tag v0.1.0 && git push origin v0.1.0` (or **Run workflow** with `dry_run` unchecked). A `v*` tag always publishes.
+4. Tag and push: `git tag v0.1.1 && git push origin v0.1.1` (or **Run workflow** with `dry_run` unchecked). A `v*` tag always publishes.
 5. Confirm [pypi.org/project/vectorsmith](https://pypi.org/project/vectorsmith/). Then `pip install "vectorsmith[qdrant]"` in a fresh venv.
 
 ## Code of conduct

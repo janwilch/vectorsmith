@@ -1,15 +1,77 @@
-# vectorsmith
+# VectorSmith
 
-Install this package. Write a `tools.yaml`. Use `load_tools` in Python or `vectorsmith serve` as an MCP server.
+**Your vector database, forged into tools an agent can actually use.**
+
+Write a `tools.yaml`. VectorSmith compiles it into typed, tenant-guarded tools — then you either import them in Python or serve them over MCP.
+
+[Docs](https://kjgpta.github.io/vectorsmith/) · [GitHub](https://github.com/kjgpta/vectorsmith) · [Changelog](https://github.com/kjgpta/vectorsmith/blob/main/CHANGELOG.md)
 
 ```bash
-pip install "vectorsmith[qdrant,langchain]"
+pip install "vectorsmith[qdrant]"
 ```
+
+Store extras: `qdrant` · `pgvector` · `chroma` · `pinecone` · `weaviate` · `milvus` — [which stores ship](https://kjgpta.github.io/vectorsmith/vector-stores/).
+
+## Two doors, one YAML
+
+| You are building… | Install | Call |
+|---|---|---|
+| A **Python agent** (LangChain, LangGraph, OpenAI Agents, Anthropic SDK) | `pip install "vectorsmith[qdrant,langchain]"` | `from vectorsmith import load_tools` |
+| A **chat / IDE host** (Claude Desktop, Claude Code, Codex, Cursor) | `pip install "vectorsmith[qdrant]"` so `vectorsmith` is on `PATH` | `vectorsmith serve tools.yaml --name invoices` |
+
+The agent never sees the store URL, the API key, or hidden tenant filters.
 
 ```python
-from vectorsmith import load_tools
+from vectorsmith import load_tools, connect
 
-tools = load_tools("tools.yaml")
+tools = load_tools("tools.invoices.yaml", env_file=".env")
+# or
+vs = connect("tools.invoices.yaml", env_file=".env")
+rows = await vs.call("search_invoices", {"query": "Globex", "limit": 3})
+await vs.aclose()
 ```
 
-See the repository `README.md` and `docs/` for integrations and the YAML reference.
+```json
+{
+  "mcpServers": {
+    "invoices": {
+      "command": "vectorsmith",
+      "args": ["serve", "/absolute/path/tools.invoices.yaml", "--env-file", "/absolute/path/.env", "--name", "invoices"]
+    }
+  }
+}
+```
+
+Host guides: [Claude Desktop](https://kjgpta.github.io/vectorsmith/integrations/claude-desktop/) · [Claude Code](https://kjgpta.github.io/vectorsmith/integrations/claude-code/) · [Codex](https://kjgpta.github.io/vectorsmith/integrations/openai-codex/) · [Cursor](https://kjgpta.github.io/vectorsmith/integrations/cursor/).
+
+## Write a tool, not a prompt
+
+```yaml
+tds_version: "1"
+
+connections:
+  invoices:
+    backend: qdrant
+    url: ${QDRANT_URL}
+    api_key: ${QDRANT_API_KEY:-}
+
+tools:
+  - name: search_invoices
+    kind: search
+    description: >
+      Search invoices by free text and filter by client, status, or amount.
+    target: { connection: invoices, collection: invoices }
+    query: { param: query, required: false }
+    static_filters:
+      - { path: tenant, op: eq, value: acme }
+    parameters:
+      - { name: client, path: client_name, dtype: keyword, op: eq }
+      - { name: status, path: status, dtype: keyword, op: in,
+          enum: [draft, sent, paid, overdue] }
+    output:
+      fields: [invoice_id, client_name, status, amount]
+```
+
+`tenant: acme` is **not** in the model-facing schema. Full contract: [tools.yaml reference](https://kjgpta.github.io/vectorsmith/tools-yaml-reference/).
+
+Apache-2.0. *Forge the tools. Keep the store.*

@@ -3,6 +3,17 @@
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [SemVer](https://semver.org/).
 
+## [0.1.1] — 2026-08-19
+
+### Changed
+
+- PyPI long description is the package README (install, two doors, YAML sketch, store extras).
+- Builtin HTTP OAuth writes the one-time access secret to `~/.vectorsmith/access-secret.once` (mode 0600) instead of printing it.
+
+### Fixed
+
+- Secret-lint corpus no longer uses a Stripe `whsec_` sample that GitHub secret scanning treated as a live key.
+
 ## [0.1.0] — 2026-08-19
 
 First public release.

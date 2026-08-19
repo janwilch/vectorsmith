@@ -14,7 +14,7 @@ cd vectorsmith
 uv sync
 ```
 
-From PyPI (when published), install the extra for **your** store — [which stores ship](vector-stores.md):
+From PyPI, install the extra for **your** store — [which stores ship](vector-stores.md):
 
 ```bash
 pip install "vectorsmith[qdrant]"      # or pgvector, chroma, pinecone, weaviate, milvus
