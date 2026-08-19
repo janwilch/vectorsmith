@@ -1,0 +1,13 @@
+app = "vectorsmith"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+
+[env]
+  PUBLIC_URL = "https://vectorsmith.fly.dev"
+  # Set QDRANT_URL / QDRANT_API_KEY with `fly secrets set`

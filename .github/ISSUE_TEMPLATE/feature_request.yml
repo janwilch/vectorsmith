@@ -1,0 +1,20 @@
+name: Feature request
+description: Propose a change to tools.yaml, a backend, or an integration
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: Check [docs/](docs/README.md) and existing issues first. Do not include credentials.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is hard or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+    validations:
+      required: true

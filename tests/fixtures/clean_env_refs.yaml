@@ -1,0 +1,10 @@
+tds_version: "1"
+connections:
+  main:
+    backend: qdrant
+    url: ${QDRANT_URL}
+    api_key: ${QDRANT_API_KEY}
+tools:
+  - name: search_invoices
+    description: Search invoices by client status and due date.
+    target: { connection: main, collection: invoices }

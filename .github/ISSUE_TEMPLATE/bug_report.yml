@@ -1,0 +1,38 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search existing issues first. Read [docs/faq.md](docs/faq.md) before filing.
+        Do not include credentials or `.env` contents. Include `vectorsmith validate --json` output if validation failed.
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Minimal tools.yaml (secrets as ${VAR} only), command, and versions.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: VectorSmith version
+      placeholder: "0.1.0"
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.12"

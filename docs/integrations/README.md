@@ -1,0 +1,44 @@
+# Integrations
+
+Hub: [documentation home](../README.md) · [Python API](../python-api.md) · [Getting started](../getting-started.md).
+
+Two ways to use a `tools.yaml`. Pick the one your product supports.
+
+| You are building… | Use | Install |
+|---|---|---|
+| A **Python agent** (LangChain, LangGraph, OpenAI Agents, Anthropic SDK) | `load_tools` / `connect` in-process | `pip install "vectorsmith[qdrant,…]"` — `connect()` needs the store extra (`qdrant`); `load_tools` also needs `langchain` / `langgraph` / `openai-agents` / `anthropic` as listed below |
+| A **chat / IDE host** (Claude Desktop, Claude Code, Codex, Cursor) | `vectorsmith serve` as an MCP server | `pip install "vectorsmith[qdrant]"` so `vectorsmith` is on `PATH` |
+
+Same YAML either way. Do not import `Engine`. Field-by-field: [tools.yaml](../tools-yaml-reference.md).
+
+## MCP hosts
+
+- [Claude Desktop](claude-desktop.md)
+- [Claude Code](claude-code.md)
+- [OpenAI Codex](openai-codex.md) (CLI, IDE extension, ChatGPT desktop Codex)
+- [Cursor](cursor.md)
+- [claude.ai custom connector](../quickstart-selfhost.md) (`serve --http`)
+
+Copy-paste configs: [`examples/mcp_hosts/`](../../examples/mcp_hosts/).
+
+## Agent frameworks
+
+- [LangChain](langchain.md) — `from vectorsmith import load_tools`
+- [LangGraph](langgraph.md) — same tools; `create_react_agent` / `ToolNode`
+- [OpenAI Agents SDK](openai-agents.md) — `from vectorsmith.openai_agents import load_tools`
+- [Anthropic Messages API](anthropic.md) — `from vectorsmith.anthropic import load_tools`
+- [Other frameworks](other-frameworks.md) — LlamaIndex, CrewAI, raw `connect()`
+
+## One-liners
+
+```python
+from vectorsmith import load_tools          # LangChain / LangGraph
+from vectorsmith.openai_agents import load_tools
+from vectorsmith.anthropic import load_tools
+
+from vectorsmith import connect             # await vs.call("search_invoices", {…})
+```
+
+```bash
+vectorsmith serve tools.invoices.yaml --name invoices
+```

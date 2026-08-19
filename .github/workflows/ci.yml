@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  oss:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Sync
+        run: uv sync --group dev --frozen
+      - name: Ruff
+        run: uv run ruff check .
+      - name: Mypy (core)
+        run: uv run mypy
+      - name: Import linter (core ↛ cli)
+        run: uv run lint-imports
+      - name: Unit tests
+        run: uv run pytest -m "not conformance" --tb=short

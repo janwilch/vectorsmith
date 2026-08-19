@@ -1,0 +1,22 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: vectorsmith
+spec:
+  template:
+    spec:
+      containers:
+        - image: vectorsmith:0.1.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PUBLIC_URL
+              value: https://vectorsmith.example.com
+            - name: QDRANT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: QDRANT_URL
+            - name: QDRANT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: QDRANT_API_KEY

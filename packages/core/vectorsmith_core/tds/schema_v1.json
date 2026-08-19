@@ -1,0 +1,1228 @@
+{
+  "$defs": {
+    "AuthoringSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "define_tool": {
+          "default": false,
+          "title": "Define Tool",
+          "type": "boolean"
+        }
+      },
+      "title": "AuthoringSpec",
+      "type": "object"
+    },
+    "BuiltinDefaults": {
+      "additionalProperties": true,
+      "properties": {
+        "collections": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Collections"
+        },
+        "descriptions": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Descriptions"
+        },
+        "output": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "static_filters": {
+          "items": {
+            "$ref": "#/$defs/StaticFilter"
+          },
+          "title": "Static Filters",
+          "type": "array"
+        }
+      },
+      "title": "BuiltinDefaults",
+      "type": "object"
+    },
+    "BuiltinToolsSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "count": {
+          "default": false,
+          "title": "Count",
+          "type": "boolean"
+        },
+        "get_by_id": {
+          "default": false,
+          "title": "Get By Id",
+          "type": "boolean"
+        },
+        "list_collections": {
+          "default": false,
+          "title": "List Collections",
+          "type": "boolean"
+        },
+        "semantic_search": {
+          "default": false,
+          "title": "Semantic Search",
+          "type": "boolean"
+        }
+      },
+      "title": "BuiltinToolsSpec",
+      "type": "object"
+    },
+    "ChromaConn": {
+      "additionalProperties": true,
+      "properties": {
+        "auth_token": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Auth Token"
+        },
+        "backend": {
+          "const": "chroma",
+          "title": "Backend",
+          "type": "string"
+        },
+        "builtin_defaults": {
+          "$ref": "#/$defs/BuiltinDefaults",
+          "default": {
+            "collections": null,
+            "descriptions": null,
+            "output": null,
+            "static_filters": []
+          }
+        },
+        "builtin_tools": {
+          "$ref": "#/$defs/BuiltinToolsSpec",
+          "default": {
+            "count": false,
+            "get_by_id": false,
+            "list_collections": false,
+            "semantic_search": false
+          }
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "backend",
+        "url"
+      ],
+      "title": "ChromaConn",
+      "type": "object"
+    },
+    "Defaults": {
+      "additionalProperties": true,
+      "properties": {
+        "embedding": {
+          "default": "fastembed/BAAI/bge-small-en-v1.5",
+          "title": "Embedding",
+          "type": "string"
+        }
+      },
+      "title": "Defaults",
+      "type": "object"
+    },
+    "FetchSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "k_param": {
+          "default": "limit",
+          "title": "K Param",
+          "type": "string"
+        },
+        "max_candidates": {
+          "default": 2000,
+          "maximum": 20000,
+          "minimum": 10,
+          "title": "Max Candidates",
+          "type": "integer"
+        },
+        "overfetch_factor": {
+          "default": 10,
+          "maximum": 50,
+          "minimum": 1,
+          "title": "Overfetch Factor",
+          "type": "integer"
+        }
+      },
+      "title": "FetchSpec",
+      "type": "object"
+    },
+    "GroupByBody": {
+      "additionalProperties": true,
+      "properties": {
+        "keys": {
+          "items": {
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*){0,2}$",
+            "type": "string"
+          },
+          "maxItems": 3,
+          "minItems": 1,
+          "title": "Keys",
+          "type": "array"
+        },
+        "per_group": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PerGroup"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "keys"
+      ],
+      "title": "GroupByBody",
+      "type": "object"
+    },
+    "GroupByStep": {
+      "additionalProperties": true,
+      "properties": {
+        "group_by": {
+          "$ref": "#/$defs/GroupByBody"
+        }
+      },
+      "required": [
+        "group_by"
+      ],
+      "title": "GroupByStep",
+      "type": "object"
+    },
+    "MilvusConn": {
+      "additionalProperties": true,
+      "properties": {
+        "backend": {
+          "const": "milvus",
+          "title": "Backend",
+          "type": "string"
+        },
+        "builtin_defaults": {
+          "$ref": "#/$defs/BuiltinDefaults",
+          "default": {
+            "collections": null,
+            "descriptions": null,
+            "output": null,
+            "static_filters": []
+          }
+        },
+        "builtin_tools": {
+          "$ref": "#/$defs/BuiltinToolsSpec",
+          "default": {
+            "count": false,
+            "get_by_id": false,
+            "list_collections": false,
+            "semantic_search": false
+          }
+        },
+        "database": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Database"
+        },
+        "password": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Password"
+        },
+        "token": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Token"
+        },
+        "uri": {
+          "title": "Uri",
+          "type": "string"
+        },
+        "user": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User"
+        }
+      },
+      "required": [
+        "backend",
+        "uri"
+      ],
+      "title": "MilvusConn",
+      "type": "object"
+    },
+    "OutputSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "fields": {
+          "anyOf": [
+            {
+              "items": {
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*){0,2}$",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fields"
+        },
+        "include_score": {
+          "default": true,
+          "title": "Include Score",
+          "type": "boolean"
+        },
+        "limit_default": {
+          "default": 10,
+          "maximum": 500,
+          "minimum": 1,
+          "title": "Limit Default",
+          "type": "integer"
+        },
+        "limit_max": {
+          "default": 50,
+          "maximum": 500,
+          "minimum": 1,
+          "title": "Limit Max",
+          "type": "integer"
+        }
+      },
+      "title": "OutputSpec",
+      "type": "object"
+    },
+    "ParamSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "default": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Default"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "dtype": {
+          "anyOf": [
+            {
+              "enum": [
+                "keyword",
+                "integer",
+                "float",
+                "boolean",
+                "datetime",
+                "keyword[]"
+              ],
+              "type": "string"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            }
+          ],
+          "default": "keyword",
+          "title": "Dtype"
+        },
+        "enum": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "maxItems": 100,
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enum"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max"
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9_]{0,31}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "op": {
+          "anyOf": [
+            {
+              "enum": [
+                "eq",
+                "ne",
+                "gt",
+                "gte",
+                "lt",
+                "lte",
+                "in",
+                "nin"
+              ],
+              "type": "string"
+            },
+            {
+              "enum": [
+                "exists",
+                "is_null",
+                "contains_any",
+                "contains_all",
+                "like",
+                "text_match"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Op"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*){0,2}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "required": {
+          "default": false,
+          "title": "Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "ParamSpec",
+      "type": "object"
+    },
+    "PerGroup": {
+      "additionalProperties": true,
+      "properties": {
+        "desc": {
+          "default": true,
+          "title": "Desc",
+          "type": "boolean"
+        },
+        "sort_by": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*){0,2}$",
+          "title": "Sort By",
+          "type": "string"
+        },
+        "take": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 3,
+          "title": "Take"
+        }
+      },
+      "required": [
+        "sort_by"
+      ],
+      "title": "PerGroup",
+      "type": "object"
+    },
+    "PgvectorConn": {
+      "additionalProperties": true,
+      "properties": {
+        "backend": {
+          "const": "pgvector",
+          "title": "Backend",
+          "type": "string"
+        },
+        "builtin_defaults": {
+          "$ref": "#/$defs/BuiltinDefaults",
+          "default": {
+            "collections": null,
+            "descriptions": null,
+            "output": null,
+            "static_filters": []
+          }
+        },
+        "builtin_tools": {
+          "$ref": "#/$defs/BuiltinToolsSpec",
+          "default": {
+            "count": false,
+            "get_by_id": false,
+            "list_collections": false,
+            "semantic_search": false
+          }
+        },
+        "dsn": {
+          "title": "Dsn",
+          "type": "string"
+        },
+        "id_column": {
+          "default": "id",
+          "title": "Id Column",
+          "type": "string"
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "enum": [
+                "vector",
+                "table"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mode"
+        },
+        "table": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Table"
+        },
+        "vector_column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "embedding",
+          "title": "Vector Column"
+        }
+      },
+      "required": [
+        "backend",
+        "dsn"
+      ],
+      "title": "PgvectorConn",
+      "type": "object"
+    },
+    "PineconeConn": {
+      "additionalProperties": true,
+      "properties": {
+        "api_key": {
+          "title": "Api Key",
+          "type": "string"
+        },
+        "backend": {
+          "const": "pinecone",
+          "title": "Backend",
+          "type": "string"
+        },
+        "builtin_defaults": {
+          "$ref": "#/$defs/BuiltinDefaults",
+          "default": {
+            "collections": null,
+            "descriptions": null,
+            "output": null,
+            "static_filters": []
+          }
+        },
+        "builtin_tools": {
+          "$ref": "#/$defs/BuiltinToolsSpec",
+          "default": {
+            "count": false,
+            "get_by_id": false,
+            "list_collections": false,
+            "semantic_search": false
+          }
+        },
+        "host": {
+          "title": "Host",
+          "type": "string"
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Namespace"
+        }
+      },
+      "required": [
+        "backend",
+        "api_key",
+        "host"
+      ],
+      "title": "PineconeConn",
+      "type": "object"
+    },
+    "PostFilterBody": {
+      "additionalProperties": true,
+      "properties": {
+        "expr": {
+          "title": "Expr",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expr"
+      ],
+      "title": "PostFilterBody",
+      "type": "object"
+    },
+    "PostFilterStep": {
+      "additionalProperties": true,
+      "properties": {
+        "post_filter": {
+          "$ref": "#/$defs/PostFilterBody"
+        }
+      },
+      "required": [
+        "post_filter"
+      ],
+      "title": "PostFilterStep",
+      "type": "object"
+    },
+    "ProjectBody": {
+      "additionalProperties": true,
+      "properties": {
+        "fields": {
+          "items": {
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*){0,2}$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "fields"
+      ],
+      "title": "ProjectBody",
+      "type": "object"
+    },
+    "ProjectStep": {
+      "additionalProperties": true,
+      "properties": {
+        "project": {
+          "$ref": "#/$defs/ProjectBody"
+        }
+      },
+      "required": [
+        "project"
+      ],
+      "title": "ProjectStep",
+      "type": "object"
+    },
+    "QdrantConn": {
+      "additionalProperties": true,
+      "properties": {
+        "api_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Api Key"
+        },
+        "backend": {
+          "const": "qdrant",
+          "title": "Backend",
+          "type": "string"
+        },
+        "builtin_defaults": {
+          "$ref": "#/$defs/BuiltinDefaults",
+          "default": {
+            "collections": null,
+            "descriptions": null,
+            "output": null,
+            "static_filters": []
+          }
+        },
+        "builtin_tools": {
+          "$ref": "#/$defs/BuiltinToolsSpec",
+          "default": {
+            "count": false,
+            "get_by_id": false,
+            "list_collections": false,
+            "semantic_search": false
+          }
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "backend",
+        "url"
+      ],
+      "title": "QdrantConn",
+      "type": "object"
+    },
+    "QuerySpec": {
+      "additionalProperties": true,
+      "properties": {
+        "alpha": {
+          "default": 0.5,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Alpha",
+          "type": "number"
+        },
+        "embedding": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Embedding"
+        },
+        "mode": {
+          "default": "dense",
+          "enum": [
+            "dense",
+            "hybrid"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "param": {
+          "default": "query",
+          "title": "Param",
+          "type": "string"
+        },
+        "required": {
+          "default": false,
+          "title": "Required",
+          "type": "boolean"
+        }
+      },
+      "title": "QuerySpec",
+      "type": "object"
+    },
+    "RetrieveBody": {
+      "additionalProperties": true,
+      "properties": {
+        "fetch": {
+          "$ref": "#/$defs/FetchSpec",
+          "default": {
+            "k_param": "limit",
+            "max_candidates": 2000,
+            "overfetch_factor": 10
+          }
+        },
+        "filter": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filter"
+        },
+        "query": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/QuerySpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        }
+      },
+      "required": [
+        "target"
+      ],
+      "title": "RetrieveBody",
+      "type": "object"
+    },
+    "RetrieveStep": {
+      "additionalProperties": true,
+      "properties": {
+        "retrieve": {
+          "$ref": "#/$defs/RetrieveBody"
+        }
+      },
+      "required": [
+        "retrieve"
+      ],
+      "title": "RetrieveStep",
+      "type": "object"
+    },
+    "SortBody": {
+      "additionalProperties": true,
+      "properties": {
+        "by": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*){0,2}$",
+          "title": "By",
+          "type": "string"
+        },
+        "desc": {
+          "default": true,
+          "title": "Desc",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "by"
+      ],
+      "title": "SortBody",
+      "type": "object"
+    },
+    "SortStep": {
+      "additionalProperties": true,
+      "properties": {
+        "sort": {
+          "$ref": "#/$defs/SortBody"
+        }
+      },
+      "required": [
+        "sort"
+      ],
+      "title": "SortStep",
+      "type": "object"
+    },
+    "StaticFilter": {
+      "additionalProperties": true,
+      "properties": {
+        "op": {
+          "default": "eq",
+          "enum": [
+            "eq",
+            "ne",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "in",
+            "nin"
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "path": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*){0,2}$",
+          "title": "Path",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value"
+        }
+      },
+      "required": [
+        "path",
+        "value"
+      ],
+      "title": "StaticFilter",
+      "type": "object"
+    },
+    "Target": {
+      "additionalProperties": true,
+      "properties": {
+        "collection": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {}
+          ],
+          "title": "Collection"
+        },
+        "connection": {
+          "title": "Connection",
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "collection"
+      ],
+      "title": "Target",
+      "type": "object"
+    },
+    "ToolSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "description": {
+          "maxLength": 1024,
+          "minLength": 20,
+          "title": "Description",
+          "type": "string"
+        },
+        "filter_logic": {
+          "const": "and",
+          "default": "and",
+          "title": "Filter Logic",
+          "type": "string"
+        },
+        "kind": {
+          "default": "search",
+          "enum": [
+            "search",
+            "lookup",
+            "count",
+            "scroll",
+            "pipeline",
+            "meta"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^[a-z][a-z0-9_]{2,63}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "output": {
+          "$ref": "#/$defs/OutputSpec",
+          "default": {
+            "fields": null,
+            "include_score": true,
+            "limit_default": 10,
+            "limit_max": 50
+          }
+        },
+        "parameters": {
+          "items": {
+            "$ref": "#/$defs/ParamSpec"
+          },
+          "maxItems": 12,
+          "title": "Parameters",
+          "type": "array"
+        },
+        "query": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/QuerySpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "static_filters": {
+          "items": {
+            "$ref": "#/$defs/StaticFilter"
+          },
+          "title": "Static Filters",
+          "type": "array"
+        },
+        "steps": {
+          "anyOf": [
+            {
+              "items": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/RetrieveStep"
+                  },
+                  {
+                    "$ref": "#/$defs/PostFilterStep"
+                  },
+                  {
+                    "$ref": "#/$defs/GroupByStep"
+                  },
+                  {
+                    "$ref": "#/$defs/SortStep"
+                  },
+                  {
+                    "$ref": "#/$defs/ProjectStep"
+                  }
+                ]
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Steps"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Target"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "name",
+        "description"
+      ],
+      "title": "ToolSpec",
+      "type": "object"
+    },
+    "WeaviateConn": {
+      "additionalProperties": true,
+      "properties": {
+        "api_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Api Key"
+        },
+        "backend": {
+          "const": "weaviate",
+          "title": "Backend",
+          "type": "string"
+        },
+        "builtin_defaults": {
+          "$ref": "#/$defs/BuiltinDefaults",
+          "default": {
+            "collections": null,
+            "descriptions": null,
+            "output": null,
+            "static_filters": []
+          }
+        },
+        "builtin_tools": {
+          "$ref": "#/$defs/BuiltinToolsSpec",
+          "default": {
+            "count": false,
+            "get_by_id": false,
+            "list_collections": false,
+            "semantic_search": false
+          }
+        },
+        "tenant": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tenant"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "backend",
+        "url"
+      ],
+      "title": "WeaviateConn",
+      "type": "object"
+    }
+  },
+  "additionalProperties": true,
+  "properties": {
+    "authoring": {
+      "$ref": "#/$defs/AuthoringSpec",
+      "default": {
+        "define_tool": false
+      }
+    },
+    "connections": {
+      "additionalProperties": {
+        "discriminator": {
+          "mapping": {
+            "chroma": "#/$defs/ChromaConn",
+            "milvus": "#/$defs/MilvusConn",
+            "pgvector": "#/$defs/PgvectorConn",
+            "pinecone": "#/$defs/PineconeConn",
+            "qdrant": "#/$defs/QdrantConn",
+            "weaviate": "#/$defs/WeaviateConn"
+          },
+          "propertyName": "backend"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/QdrantConn"
+          },
+          {
+            "$ref": "#/$defs/PgvectorConn"
+          },
+          {
+            "$ref": "#/$defs/ChromaConn"
+          },
+          {
+            "$ref": "#/$defs/PineconeConn"
+          },
+          {
+            "$ref": "#/$defs/WeaviateConn"
+          },
+          {
+            "$ref": "#/$defs/MilvusConn"
+          }
+        ]
+      },
+      "title": "Connections",
+      "type": "object"
+    },
+    "defaults": {
+      "$ref": "#/$defs/Defaults",
+      "default": {
+        "embedding": "fastembed/BAAI/bge-small-en-v1.5"
+      }
+    },
+    "tds_version": {
+      "const": "1",
+      "title": "Tds Version",
+      "type": "string"
+    },
+    "tools": {
+      "items": {
+        "$ref": "#/$defs/ToolSpec"
+      },
+      "title": "Tools",
+      "type": "array"
+    }
+  },
+  "required": [
+    "tds_version",
+    "connections"
+  ],
+  "title": "TDSFile",
+  "type": "object"
+}

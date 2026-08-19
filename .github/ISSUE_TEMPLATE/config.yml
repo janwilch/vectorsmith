@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/kjgpta/vectorsmith/blob/main/docs/README.md
+    about: Getting started, CLI, YAML reference, integrations, FAQ
+  - name: FAQ
+    url: https://github.com/kjgpta/vectorsmith/blob/main/docs/faq.md
+    about: Desktop disconnects, env interpolation, HTTP auth

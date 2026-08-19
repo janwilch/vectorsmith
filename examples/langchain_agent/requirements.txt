@@ -1,0 +1,4 @@
+langchain>=1.0
+langchain-openai>=0.3
+langchain-anthropic>=0.3
+langchain-mcp-adapters>=0.1

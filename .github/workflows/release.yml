@@ -1,0 +1,35 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build only; skip PyPI upload"
+        type: boolean
+        default: true
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync --group dev --frozen
+      - run: uv run ruff check .
+      - run: uv run pytest -m "not conformance" --tb=short
+      - run: uv build --package vectorsmith-core
+      - run: uv build --package vectorsmith
+      - name: Publish to PyPI
+        if: ${{ github.event_name == 'push' || inputs.dry_run == false }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/

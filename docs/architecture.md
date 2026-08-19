@@ -1,0 +1,72 @@
+# How VectorSmith is put together
+
+Hub: [documentation home](README.md).
+
+VectorSmith is a **compiler**, not a gateway and not a second copy of your database.
+
+```mermaid
+flowchart TB
+  subgraph file["tools.yaml"]
+    C["connections + ${VAR}"]
+    T["tools + static_filters"]
+    B["optional builtin_tools"]
+  end
+  subgraph compile["Every load"]
+    I["Safe YAML + secret lint"]
+    S["Synthesize opt-in built-ins"]
+    V["Validate VBxxxx"]
+    P["MCP schema + execution plan"]
+  end
+  subgraph doors["Same compiled tools"]
+    PY["connect / load_tools"]
+    MCP["vectorsmith serve"]
+  end
+  C --> I
+  T --> I
+  B --> S
+  I --> S --> V --> P
+  P --> PY
+  P --> MCP
+```
+
+## What you own
+
+- The vector / table store (Qdrant, pgvector, …)
+- The YAML contract (who may search what, with which filters)
+- Secrets in env files (`${QDRANT_URL}` under `connections` only)
+
+## What VectorSmith owns
+
+- Interpolation, dtype×op matrix, capability gates
+- Hidden `static_filters` (tenant isolation the model cannot omit)
+- Limits, field projection, optional pipelines (retrieve then Polars)
+- MCP advertisement (`tools/list` + `list_available_tools` / `run_tool`)
+- In-process wrappers for LangChain, LangGraph, OpenAI Agents, Anthropic
+
+The executor (`Engine`) runs **inside** `serve`, `test`, `validate --live`, and `connect` / `load_tools`. Application code does not import it.
+
+## Two doors, one contract
+
+| Door | Process | Who |
+|---|---|---|
+| `load_tools` / `connect` | Your Python process | LangChain, LangGraph, Agents SDK, Anthropic SDK, custom loops |
+| `vectorsmith serve` | Child process the host spawns | Claude Desktop, Claude Code, Codex, Cursor, claude.ai (`--http`) |
+
+You do not copy `inputSchema` into the LLM SDK. You do not merge VectorSmith into Slack/GitHub MCP — those stay sibling servers ([coexistence](coexistence.md)).
+
+## Packages
+
+| Package | Role |
+|---|---|
+| `vectorsmith` | CLI + public `connect` / `load_tools` |
+| `vectorsmith-core` | TDS models, compiler, adapters — used by the CLI; `load_project` for authoring/CI |
+
+`vectorsmith_core` must not import the CLI (import-linter).
+
+## What is not in this repo
+
+Cloud dashboard, hosted VectorSmith, and write tools on your store. Phase-1 OSS is **read-only** tools from YAML.
+
+## Read next
+
+[tools.yaml](tools-yaml-reference.md) · [CLI](cli.md) · [Python API](python-api.md) · [Getting started](getting-started.md)

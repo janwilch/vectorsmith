@@ -1,0 +1,60 @@
+[project]
+name = "vectorsmith"
+version = "0.1.0"
+description = "YAML tools for agents: load_tools in-process, or vectorsmith serve as MCP"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "VectorSmith contributors" }]
+keywords = ["mcp", "langchain", "langgraph", "claude", "codex", "agents"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
+dependencies = [
+    "vectorsmith-core",
+    "typer",
+    "watchfiles",
+    "uvicorn",
+    "starlette",
+    "mcp>=1.2",
+    "argon2-cffi",
+    "ruamel.yaml",
+]
+
+[project.urls]
+Homepage = "https://github.com/kjgpta/vectorsmith"
+Documentation = "https://github.com/kjgpta/vectorsmith/tree/main/docs"
+Issues = "https://github.com/kjgpta/vectorsmith/issues"
+Changelog = "https://github.com/kjgpta/vectorsmith/blob/main/CHANGELOG.md"
+
+[project.scripts]
+vectorsmith = "vectorsmith_cli.main:app"
+
+[project.optional-dependencies]
+qdrant = ["vectorsmith-core[qdrant,embed]"]
+pgvector = ["vectorsmith-core[pgvector,embed]"]
+chroma = ["vectorsmith-core[chroma,embed]"]
+pinecone = ["vectorsmith-core[pinecone,embed]"]
+weaviate = ["vectorsmith-core[weaviate,embed]"]
+milvus = ["vectorsmith-core[milvus,embed]"]
+langchain = ["langchain-core>=0.3"]
+langgraph = ["langchain-core>=0.3", "langgraph>=0.2"]
+openai-agents = ["openai-agents>=0.2"]
+anthropic = ["anthropic>=0.40"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["vectorsmith_cli", "vectorsmith"]
+
+[tool.uv.sources]
+vectorsmith-core = { workspace = true }

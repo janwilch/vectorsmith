@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "invoices": {
+      "type": "stdio",
+      "command": "vectorsmith",
+      "args": [
+        "serve",
+        "examples/qdrant_invoices/tools.invoices.yaml",
+        "--env-file",
+        "examples/qdrant_invoices/.env.example",
+        "--name",
+        "invoices"
+      ]
+    },
+    "tickets": {
+      "type": "stdio",
+      "command": "vectorsmith",
+      "args": [
+        "serve",
+        "examples/qdrant_invoices/tools.tickets.yaml",
+        "--env-file",
+        "examples/qdrant_invoices/.env.example",
+        "--name",
+        "tickets"
+      ]
+    }
+  }
+}

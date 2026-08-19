@@ -1,0 +1,101 @@
+# Support-ticket tools. Serve as MCP name "tickets":
+#   vectorsmith serve tools.tickets.yaml --name tickets
+
+tds_version: "1"
+
+connections:
+  tickets:
+    backend: qdrant
+    url: ${QDRANT_URL}
+    api_key: ${QDRANT_API_KEY:-}
+
+defaults:
+  embedding: fastembed/BAAI/bge-small-en-v1.5
+
+tools:
+  - name: search_tickets
+    kind: search
+    description: >
+      Search support tickets by free text and filter by customer, status,
+      or severity. Use when the user asks about tickets, support, or incidents.
+    target: { connection: tickets, collection: tickets }
+    query: { param: query, required: false }
+    static_filters:
+      - { path: tenant, op: eq, value: acme }
+    parameters:
+      - { name: customer, path: customer_name, dtype: keyword, op: eq }
+      - { name: status, path: status, dtype: keyword, op: in,
+          enum: [open, pending, resolved, closed] }
+      - { name: severity, path: severity, dtype: keyword, op: eq,
+          enum: [low, medium, high, critical] }
+    output:
+      fields: [ticket_id, customer_name, status, severity, product]
+      limit_default: 10
+      limit_max: 50
+
+  - name: get_ticket
+    kind: lookup
+    description: >
+      Fetch one support ticket by ticket_id (for example TKT-0001).
+      Use when the user already has the ticket number.
+    target: { connection: tickets, collection: tickets }
+    static_filters:
+      - { path: tenant, op: eq, value: acme }
+    parameters:
+      - { name: ticket_id, path: ticket_id, dtype: keyword, op: eq, required: true }
+    output:
+      fields: [ticket_id, customer_name, status, severity, product, body]
+      limit_default: 1
+      limit_max: 1
+
+  - name: count_tickets
+    kind: count
+    description: >
+      Count support tickets matching optional status, severity, or customer.
+      Use when the user asks how many tickets are open or critical.
+    target: { connection: tickets, collection: tickets }
+    static_filters:
+      - { path: tenant, op: eq, value: acme }
+    parameters:
+      - { name: customer, path: customer_name, dtype: keyword, op: eq }
+      - { name: status, path: status, dtype: keyword, op: in,
+          enum: [open, pending, resolved, closed] }
+      - { name: severity, path: severity, dtype: keyword, op: eq,
+          enum: [low, medium, high, critical] }
+
+  - name: search_critical_tickets
+    kind: search
+    description: >
+      Search only critical-severity support tickets by text or customer.
+      Use when the user asks about P1 incidents or critical tickets.
+    target: { connection: tickets, collection: tickets }
+    query: { param: query, required: false }
+    static_filters:
+      - { path: tenant, op: eq, value: acme }
+      - { path: severity, op: eq, value: critical }
+    parameters:
+      - { name: customer, path: customer_name, dtype: keyword, op: eq }
+      - { name: status, path: status, dtype: keyword, op: in,
+          enum: [open, pending, resolved, closed] }
+    output:
+      fields: [ticket_id, customer_name, status, severity, product]
+      limit_default: 10
+      limit_max: 50
+
+  - name: list_open_tickets
+    kind: search
+    description: >
+      List open support tickets, optionally filtered by customer or severity.
+      Use when the user asks what tickets are still open or in the queue.
+    target: { connection: tickets, collection: tickets }
+    static_filters:
+      - { path: tenant, op: eq, value: acme }
+      - { path: status, op: eq, value: open }
+    parameters:
+      - { name: customer, path: customer_name, dtype: keyword, op: eq }
+      - { name: severity, path: severity, dtype: keyword, op: eq,
+          enum: [low, medium, high, critical] }
+    output:
+      fields: [ticket_id, customer_name, status, severity, product]
+      limit_default: 10
+      limit_max: 50

@@ -1,0 +1,44 @@
+?start: expr
+
+?expr: or_expr
+
+?or_expr: and_expr ("OR"i and_expr)*
+
+?and_expr: not_expr ("AND"i not_expr)*
+
+?not_expr: "NOT"i not_expr        -> not_
+         | comparison
+
+?comparison: arith CMPOP arith    -> cmp
+           | arith
+
+?arith: term (ADD_OP term)*
+
+?term: factor (MUL_OP factor)*
+
+?factor: "-" factor               -> neg
+       | atom
+
+?atom: NUMBER                     -> number
+     | STRING                     -> string
+     | "true"i                    -> true_
+     | "false"i                   -> false_
+     | "null"i                    -> null_
+     | field
+     | param
+     | "(" expr ")"
+
+field: CNAME ("." CNAME)*
+
+param: "params" "." CNAME
+
+CMPOP: "==" | "!=" | ">=" | "<=" | ">" | "<"
+ADD_OP: "+" | "-"
+MUL_OP: "*" | "/"
+
+STRING: /'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/
+NUMBER: /-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/
+
+%import common.CNAME
+%import common.WS
+%ignore WS

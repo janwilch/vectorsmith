@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "invoices": {
+      "command": "vectorsmith",
+      "args": [
+        "serve",
+        "/absolute/path/tools.invoices.yaml",
+        "--env-file",
+        "/absolute/path/.env",
+        "--name",
+        "invoices"
+      ],
+      "cwd": "/absolute/path"
+    },
+    "tickets": {
+      "command": "vectorsmith",
+      "args": [
+        "serve",
+        "/absolute/path/tools.tickets.yaml",
+        "--env-file",
+        "/absolute/path/.env",
+        "--name",
+        "tickets"
+      ],
+      "cwd": "/absolute/path"
+    }
+  }
+}

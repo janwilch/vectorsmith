@@ -1,0 +1,14 @@
+[importlinter]
+root_packages =
+    vectorsmith_core
+    vectorsmith_cli
+    vectorsmith
+
+[importlinter:contract:core-not-cli]
+name = core does not import cli
+type = forbidden
+source_modules =
+    vectorsmith_core
+forbidden_modules =
+    vectorsmith_cli
+    vectorsmith

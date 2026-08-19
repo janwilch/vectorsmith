@@ -1,0 +1,7 @@
+tds_version: "1"
+connections:
+  pc:
+    backend: pinecone
+    api_key: ${PINECONE_API_KEY}
+    host: ${PINECONE_HOST}
+tools: []

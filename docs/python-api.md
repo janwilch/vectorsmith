@@ -1,0 +1,148 @@
+# Python API
+
+Hub: [documentation home](README.md). CLI interpolation is different: [CLI](cli.md).
+
+Application code installs **`vectorsmith`**, not `vectorsmith-core`. Do not import `Engine`.
+
+```bash
+pip install "vectorsmith[qdrant]"                 # connect()
+pip install "vectorsmith[qdrant,langchain]"       # load_tools (LangChain / LangGraph)
+```
+
+Env for these APIs: **`os.environ`**, then `env=`, then `env_file=` (file wins). That is **not** how the CLI works — [CLI](cli.md).
+
+Always `await …aclose()` when finished (closes store clients).
+
+---
+
+## `connect`
+
+```python
+from vectorsmith import connect
+
+vs = connect(
+    "tools.invoices.yaml",
+    "tools.tickets.yaml",
+    env_file=".env",           # optional
+    env={"QDRANT_URL": "…"},   # optional; overrides os.environ, then env_file overlays
+)
+```
+
+Returns [`BoundTools`](#boundtools). Compiles each YAML in-process (no `serve` subprocess). Duplicate tool names: last file wins for `call()`.
+
+---
+
+## `BoundTools`
+
+| Member | Role |
+|---|---|
+| `names` | Tool names in load order |
+| `schemas` | MCP dicts: `name`, `description`, `inputSchema` |
+| `as_anthropic()` | `{name, description, input_schema}` for `messages.create` |
+| `as_langchain()` | LangChain `Toolset` (`vectorsmith[langchain]`) |
+| `as_openai_agents()` | OpenAI Agents `FunctionTool` list (`vectorsmith[openai-agents]`) |
+| `await call(name, args)` | Run a tool; `args` is a mapping (omit optional keys or pass `None` to drop them) |
+| `await aclose()` | Close engines |
+
+```python
+rows = await vs.call("search_invoices", {"query": "Globex", "limit": 3})
+```
+
+Unknown `name` → `KeyError`.
+
+---
+
+## `load_tools` (LangChain / LangGraph)
+
+```python
+from vectorsmith import load_tools
+# same function:
+from vectorsmith.langchain import load_tools
+from vectorsmith.langgraph import load_tools
+
+tools = load_tools("tools.invoices.yaml", env_file=".env")
+```
+
+Requires **`langchain-core`** (`vectorsmith[langchain]` or `[langgraph]`). Returns a `Toolset` (a `list` of LangChain `StructuredTool`s) with `aclose()`.
+
+Equivalent: `connect(...).as_langchain()`.
+
+Pass into `create_agent` / `create_react_agent` / `ToolNode`. Mix with your own `@tool`s.
+
+---
+
+## OpenAI Agents SDK
+
+```python
+from vectorsmith.openai_agents import load_tools
+
+vs = load_tools("tools.yaml", env_file=".env")
+# vs is a list of FunctionTool; splat into Agent(tools=[*vs, ...])
+await vs.aclose()
+```
+
+Requires `vectorsmith[openai-agents]`. Optional YAML fields are not OpenAI strict-mode schemas; the adapter sets `strict_json_schema=False`.
+
+Equivalent: `connect(...).as_openai_agents()`.
+
+---
+
+## Anthropic Messages API
+
+```python
+from vectorsmith.anthropic import load_tools
+
+vs = load_tools("tools.yaml", env_file=".env")
+resp = client.messages.create(..., tools=vs.tools, messages=...)
+output = await vs.execute(block.name, block.input)  # JSON string
+await vs.aclose()
+```
+
+Requires `vectorsmith[anthropic]` (or `pip install anthropic` plus `vectorsmith[qdrant]`). `vs.tools` is the list of API dicts; `execute` dispatches `tool_use`.
+
+---
+
+## Return envelope
+
+`call()` / MCP tool results look like:
+
+| Field | Meaning |
+|---|---|
+| `rows` | Projected records |
+| `count` | Length of `rows` |
+| `truncated` | Hit `limit` |
+| `may_be_incomplete` | Pipeline over-fetch cap; caveat the answer |
+| `search_mode` | `dense` · `hybrid` · `none` |
+| `warnings` | e.g. `VB4001`–`VB4003` |
+| `latency_ms` | Engine timing |
+| `exact_search` / `compiled_query` | Present on some results |
+
+---
+
+## Authoring (`vectorsmith_core`)
+
+For compilers, CI, and `validate`-like scripts — **not** for binding schemas onto an LLM:
+
+```python
+from vectorsmith_core import load_project
+
+project = load_project("tools.yaml", env={"QDRANT_URL": "http://localhost:6333"})
+project.mcp_tool_schemas()
+project.issues   # VBxxxx
+```
+
+`Engine` is not part of this public surface.
+
+---
+
+## Extras
+
+| Extra | What you get |
+|---|---|
+| `qdrant` / `pgvector` / `chroma` / `pinecone` / `weaviate` / `milvus` | Store client + FastEmbed |
+| `langchain` | `langchain-core` |
+| `langgraph` | `langchain-core` + `langgraph` |
+| `openai-agents` | OpenAI Agents SDK |
+| `anthropic` | Anthropic SDK |
+
+Guides: [integrations](integrations/README.md). Examples: [examples/](../examples/README.md).

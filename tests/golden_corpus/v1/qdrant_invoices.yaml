@@ -1,0 +1,22 @@
+tds_version: "1"
+connections:
+  main:
+    backend: qdrant
+    url: ${QDRANT_URL}
+    builtin_tools:
+      semantic_search: true
+      get_by_id: true
+      count: true
+      list_collections: true
+    builtin_defaults:
+      collections: [invoices]
+      static_filters:
+        - { path: tenant, op: eq, value: acme }
+tools:
+  - name: search_invoices
+    description: Search invoices by free text and filter by client, status, or amount.
+    target: { connection: main, collection: invoices }
+    query: { param: query, required: false }
+    parameters:
+      - { name: client, path: client_name, dtype: keyword, op: eq }
+      - { name: status, path: status, dtype: keyword, op: in, enum: [draft, sent, paid, overdue] }

@@ -1,0 +1,41 @@
+# Virtualenv and Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+*.so
+
+# Tooling
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+.import_linter_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# Secrets and local env (keep committed *.example)
+.env
+.env.*
+!.env.example
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+.cursor/
+
+# Unpublished working notes (design dumps, idea PDF)
+.internal/
+
+# Local drafts produced by serve --enable-define
+tools.drafts.yaml
+**/tools.drafts.yaml

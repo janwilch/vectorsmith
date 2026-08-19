@@ -1,0 +1,29 @@
+# Merge into ~/.codex/config.toml (or .codex/config.toml in a trusted project).
+# Table name must be mcp_servers (underscores).
+
+[mcp_servers.invoices]
+command = "vectorsmith"
+args = [
+  "serve",
+  "/absolute/path/tools.invoices.yaml",
+  "--env-file",
+  "/absolute/path/.env",
+  "--name",
+  "invoices",
+]
+cwd = "/absolute/path"
+startup_timeout_sec = 30
+tool_timeout_sec = 60
+
+[mcp_servers.tickets]
+command = "vectorsmith"
+args = [
+  "serve",
+  "/absolute/path/tools.tickets.yaml",
+  "--env-file",
+  "/absolute/path/.env",
+  "--name",
+  "tickets",
+]
+cwd = "/absolute/path"
+startup_timeout_sec = 30

@@ -1,0 +1,9 @@
+tds_version: "1"
+connections:
+  ops:
+    backend: pgvector
+    dsn: ${PG_DSN}
+    table: invoices
+    mode: table
+    vector_column:
+tools: []

@@ -1,0 +1,96 @@
+# Invoice tools. Serve as MCP name "invoices":
+#   vectorsmith serve tools.invoices.yaml --name invoices
+
+tds_version: "1"
+
+connections:
+  invoices:
+    backend: qdrant
+    url: ${QDRANT_URL}
+    api_key: ${QDRANT_API_KEY:-}
+
+defaults:
+  embedding: fastembed/BAAI/bge-small-en-v1.5
+
+tools:
+  - name: search_invoices
+    kind: search
+    description: >
+      Search invoices by free text and filter by client, status, or amount.
+      Use when the user asks about invoices, billing, or payments.
+    target: { connection: invoices, collection: invoices }
+    query: { param: query, required: false }
+    static_filters:
+      - { path: tenant, op: eq, value: acme }
+    parameters:
+      - { name: client, path: client_name, dtype: keyword, op: eq }
+      - { name: status, path: status, dtype: keyword, op: in,
+          enum: [draft, sent, paid, overdue] }
+      - { name: min_amount, path: amount, dtype: float, op: gte }
+    output:
+      fields: [invoice_id, client_name, status, amount]
+      limit_default: 10
+      limit_max: 50
+
+  - name: get_invoice
+    kind: lookup
+    description: >
+      Fetch one invoice by invoice_id (for example INV-0001).
+      Use when the user already has the invoice number.
+    target: { connection: invoices, collection: invoices }
+    static_filters:
+      - { path: tenant, op: eq, value: acme }
+    parameters:
+      - { name: invoice_id, path: invoice_id, dtype: keyword, op: eq, required: true }
+    output:
+      fields: [invoice_id, client_name, status, amount]
+      limit_default: 1
+      limit_max: 1
+
+  - name: count_invoices
+    kind: count
+    description: >
+      Count invoices matching optional client and status filters.
+      Use when the user asks how many invoices there are.
+    target: { connection: invoices, collection: invoices }
+    static_filters:
+      - { path: tenant, op: eq, value: acme }
+    parameters:
+      - { name: client, path: client_name, dtype: keyword, op: eq }
+      - { name: status, path: status, dtype: keyword, op: in,
+          enum: [draft, sent, paid, overdue] }
+
+  - name: list_overdue_invoices
+    kind: search
+    description: >
+      List overdue invoices only, optionally filtered by client or minimum amount.
+      Use when the user asks which invoices are overdue or past due.
+    target: { connection: invoices, collection: invoices }
+    static_filters:
+      - { path: tenant, op: eq, value: acme }
+      - { path: status, op: eq, value: overdue }
+    parameters:
+      - { name: client, path: client_name, dtype: keyword, op: eq }
+      - { name: min_amount, path: amount, dtype: float, op: gte }
+    output:
+      fields: [invoice_id, client_name, status, amount]
+      limit_default: 10
+      limit_max: 50
+
+  - name: search_paid_invoices
+    kind: search
+    description: >
+      Search invoices that are already paid, optionally by client or amount.
+      Use when the user asks about paid invoices or completed payments.
+    target: { connection: invoices, collection: invoices }
+    query: { param: query, required: false }
+    static_filters:
+      - { path: tenant, op: eq, value: acme }
+      - { path: status, op: eq, value: paid }
+    parameters:
+      - { name: client, path: client_name, dtype: keyword, op: eq }
+      - { name: min_amount, path: amount, dtype: float, op: gte }
+    output:
+      fields: [invoice_id, client_name, status, amount]
+      limit_default: 10
+      limit_max: 50
