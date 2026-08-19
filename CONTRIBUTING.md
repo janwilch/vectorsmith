@@ -47,10 +47,31 @@ Keep those three in sync. After a user-visible change, add a note to `CHANGELOG.
 
 ## Publishing (maintainers)
 
-Source: [github.com/kjgpta/vectorsmith](https://github.com/kjgpta/vectorsmith).
+Source: [github.com/kjgpta/vectorsmith](https://github.com/kjgpta/vectorsmith). Two packages go to PyPI together: **`vectorsmith-core`** then **`vectorsmith`** (the latter depends on the former). Do not use an API token; the [Release](.github/workflows/release.yml) workflow uses [trusted publishing](https://docs.pypi.org/trusted-publishers/).
 
-1. Add PyPI [trusted publishing](https://docs.pypi.org/trusted-publishers/) for both `vectorsmith` and `vectorsmith-core`, pointed at `.github/workflows/release.yml`.
-2. Run the **Release** workflow (`dry_run` first, then publish), or tag `v0.1.0`.
+### One-time setup
+
+1. Create a [PyPI](https://pypi.org/account/register/) account with 2FA (required).
+2. Confirm the GitHub Actions environment `pypi` exists on this repo (the workflow already names it).
+3. On PyPI, open **Account settings → Publishing** and add a **pending** publisher **twice** (once per project), with the same GitHub fields:
+
+   | Field | Value |
+   |---|---|
+   | PyPI project name | `vectorsmith-core` then `vectorsmith` |
+   | Owner | `kjgpta` |
+   | Repository | `vectorsmith` |
+   | Workflow name | `release.yml` |
+   | Environment name | `pypi` |
+
+   A pending publisher does **not** reserve the name until the first successful upload. Publish soon after adding both.
+
+### Each release
+
+1. Versions match in `packages/core/pyproject.toml`, `packages/cli/pyproject.toml`, and `ENGINE_VERSION`. Changelog is updated.
+2. `uv lock` if you changed dependencies. Push to `main`.
+3. Dry-run: **Actions → release → Run workflow** with `dry_run` checked (build + tests, no upload).
+4. Tag and push: `git tag v0.1.0 && git push origin v0.1.0` (or **Run workflow** with `dry_run` unchecked). A `v*` tag always publishes.
+5. Confirm [pypi.org/project/vectorsmith](https://pypi.org/project/vectorsmith/) and [vectorsmith-core](https://pypi.org/project/vectorsmith-core/). Then `pip install "vectorsmith[qdrant]"` in a fresh venv.
 
 ## Code of conduct
 

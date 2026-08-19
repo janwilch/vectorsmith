@@ -28,7 +28,9 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/kjgpta/vectorsmith"
+Documentation = "https://kjgpta.github.io/vectorsmith/"
 Issues = "https://github.com/kjgpta/vectorsmith/issues"
+Changelog = "https://github.com/kjgpta/vectorsmith/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 qdrant = ["qdrant-client>=1.9"]

@@ -18,7 +18,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "vectorsmith-core",
+    "vectorsmith-core>=0.1.0,<0.2",
     "typer",
     "watchfiles",
     "uvicorn",
@@ -30,7 +30,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/kjgpta/vectorsmith"
-Documentation = "https://github.com/kjgpta/vectorsmith/tree/main/docs"
+Documentation = "https://kjgpta.github.io/vectorsmith/"
 Issues = "https://github.com/kjgpta/vectorsmith/issues"
 Changelog = "https://github.com/kjgpta/vectorsmith/blob/main/CHANGELOG.md"
 
@@ -38,12 +38,12 @@ Changelog = "https://github.com/kjgpta/vectorsmith/blob/main/CHANGELOG.md"
 vectorsmith = "vectorsmith_cli.main:app"
 
 [project.optional-dependencies]
-qdrant = ["vectorsmith-core[qdrant,embed]"]
-pgvector = ["vectorsmith-core[pgvector,embed]"]
-chroma = ["vectorsmith-core[chroma,embed]"]
-pinecone = ["vectorsmith-core[pinecone,embed]"]
-weaviate = ["vectorsmith-core[weaviate,embed]"]
-milvus = ["vectorsmith-core[milvus,embed]"]
+qdrant = ["vectorsmith-core[qdrant,embed]>=0.1.0,<0.2"]
+pgvector = ["vectorsmith-core[pgvector,embed]>=0.1.0,<0.2"]
+chroma = ["vectorsmith-core[chroma,embed]>=0.1.0,<0.2"]
+pinecone = ["vectorsmith-core[pinecone,embed]>=0.1.0,<0.2"]
+weaviate = ["vectorsmith-core[weaviate,embed]>=0.1.0,<0.2"]
+milvus = ["vectorsmith-core[milvus,embed]>=0.1.0,<0.2"]
 langchain = ["langchain-core>=0.3"]
 langgraph = ["langchain-core>=0.3", "langgraph>=0.2"]
 openai-agents = ["openai-agents>=0.2"]
