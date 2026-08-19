@@ -14,7 +14,7 @@ Two MCP servers (the `mcpServers` key / `--name` is what Claude Connectors show)
 |---|---|---|
 | [`tools.invoices.yaml`](qdrant_invoices/tools.invoices.yaml) | `invoices` | Invoice search / lookup / count |
 | [`tools.tickets.yaml`](qdrant_invoices/tools.tickets.yaml) | `tickets` | Support-ticket search / lookup / count |
-| [`qdrant_invoices/.env.example`](qdrant_invoices/.env.example) | | `QDRANT_URL` for that cluster |
+| [`qdrant_invoices/.env.example`](qdrant_invoices/.env.example) | | Placeholder `QDRANT_URL` (`localhost`); copy to `.env` |
 | [`qdrant_invoices/seed_tickets.py`](qdrant_invoices/seed_tickets.py) | | Create `tickets` and upsert 80 sample rows |
 | [`qdrant_invoices/validate_tools.py`](qdrant_invoices/validate_tools.py) | | Compile both files (`load_project` only) |
 
