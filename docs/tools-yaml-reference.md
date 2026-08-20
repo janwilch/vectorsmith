@@ -196,9 +196,9 @@ defaults:
   embedding: fastembed/BAAI/bge-small-en-v1.5
 ```
 
-TDS default for this key is `fastembed/BAAI/bge-small-en-v1.5`. At run time the executor uses the tool’s `query.embedding` if set, otherwise that same model string. A custom `defaults.embedding` is stored on the project but is **not** read by the compiler yet — set `query.embedding` on the search tool to override.
+TDS default for this key is `fastembed/BAAI/bge-small-en-v1.5`. The compiler copies it onto each tool’s execution plan. Per-tool `query.embedding` (or `retrieve.query.embedding` on a pipeline retrieve) **wins** when set.
 
-The collection’s vector size must match the model (the invoice example is 384-dim `BAAI/bge-small-en-v1.5`).
+The collection’s vector size must match the model (the invoice example is 384-dim `BAAI/bge-small-en-v1.5`). `validate --live` checks this for known FastEmbed ids (**VB2017**) and warns if the model string is unknown (**VB2018**).
 
 ---
 
@@ -245,7 +245,7 @@ tools:
 
 `^[a-z][a-z0-9_]{2,63}$` — unique in the file. Blocked if a built-in of that name is enabled (`VB2010`). Also reserved (even if not advertised today): `ping`, `define_tool`, `describe_collection`, `list_available_tools`, `run_tool`, `list_my_connections`, `get_started`.
 
-`serve` always advertises `list_available_tools` and `run_tool` **in addition to** your compiled tools. With authoring on, it also advertises `describe_collection` and `define_tool`.
+By default `serve` advertises `list_available_tools` and `run_tool` **in addition to** your compiled tools (Claude Desktop freeze workaround). Those two are MCP-only; `load_tools` does not expose them. `run_tool` re-validates arguments against the named tool and still applies `static_filters`. Pass `--no-meta-tools` to omit them. With authoring on, `serve` also advertises `describe_collection` and `define_tool`.
 
 ### `description`
 
@@ -323,7 +323,7 @@ Qdrant also allows `exists` / `is_null` / `text_match`. pgvector adds `like`. Se
 
 ### `static_filters`
 
-Applied on **every** call. Not advertised to the model. Use for tenant / org isolation.
+Applied on **every** call, including through MCP `run_tool`. Not advertised to the model. Use for tenant / org isolation on **payload fields**. Pinecone namespaces and Weaviate native tenants are separate — [vector stores](vector-stores.md#tenancy-vs-payload-filters).
 
 ```yaml
 static_filters:
@@ -430,7 +430,9 @@ Return envelope (in-process `call` / MCP tool result): `rows`, `count`, `truncat
 
 ## Patterns
 
-**Tenant isolation** — put org id in `static_filters` on every tool and on `builtin_defaults`. Do not rely on the model to pass `tenant`.
+**Tenant isolation** — put org id in `static_filters` on every tool and on `builtin_defaults`. Do not rely on the model to pass `tenant`. That is a **payload** predicate compiled into the store filter.
+
+It is **not** the same as Pinecone’s namespace (`target.collection` / optional `connections.*.namespace`) or Weaviate’s native multi-tenancy (`connections.*.tenant` on the connection). Those are store-native partitions. Use both layers if you need them; payload `static_filters` never sets a Weaviate tenant or a Pinecone namespace. Details: [vector stores](vector-stores.md#tenancy-vs-payload-filters).
 
 **Named slices** — a second search tool with an extra static filter (`status: overdue`, `severity: critical`) beats one mega-tool with a required enum. Descriptions should say when to use each.
 
@@ -448,7 +450,8 @@ Return envelope (in-process `call` / MCP tool result): `rows`, `count`, `truncat
 # Schema, interpolations, capability matrix (no network)
 vectorsmith validate tools.yaml --env-file .env
 
-# Also ping the store, dims, sparse / hybrid (VB2013)
+# Also ping the store: health, dims (VB2017/VB2018), sparse / hybrid (VB2013),
+# payload-path drift (VB4004)
 vectorsmith validate tools.yaml --live --env-file .env
 
 # Fail CI on warnings too
@@ -475,8 +478,11 @@ Exit codes: `0` ok · `1` warnings with `--strict` (`validate` only) · `2` erro
 | `VB2012` / `VB2013` | error / warning | Hybrid unsupported or collection has no sparse config |
 | `VB2014` | error | User declared `kind: meta` |
 | `VB2016` | error | `search` / `query` on a pgvector table-mode connection |
+| `VB2017` | error | Live collection dim ≠ known embedder dim (`validate --live`) |
+| `VB2018` | warning | Embedding model id not in the dim registry (`validate --live`) |
 | `VB2101` / `VB2102` | error | Pipeline missing `retrieve` or empty `expr` |
 | `VB3001`–`VB3005` | warning | Weak descriptions or overlapping built-in search |
+| `VB4004` | warning | YAML payload path not seen on live collection fields |
 
 JSON Schema for editors lives next to the models: `packages/core/vectorsmith_core/tds/schema_v1.json` (generated from the Pydantic types).
 

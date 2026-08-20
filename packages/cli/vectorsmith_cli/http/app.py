@@ -17,10 +17,10 @@ from vectorsmith_cli.http.builtin_oauth import server as oauth
 from vectorsmith_cli.http.builtin_oauth.store import AuthStore
 from vectorsmith_cli.identity import DEFAULT_SERVER_NAME, PRODUCT_NAME
 from vectorsmith_cli.serve_common import (
-    SERVER_INSTRUCTIONS,
     dispatch,
     expire_old_drafts,
     mcp_schemas,
+    server_instructions,
 )
 from vectorsmith_core.api import CallContext
 from vectorsmith_core.execute.engine import Engine
@@ -58,6 +58,7 @@ def build_app(
     *,
     engine: Engine,
     enable_define: bool,
+    include_meta: bool = True,
     auth: str,
     public_url: str,
     store: AuthStore,
@@ -83,10 +84,14 @@ def build_app(
                     "title": PRODUCT_NAME,
                     "version": ENGINE_VERSION,
                 },
-                "instructions": SERVER_INSTRUCTIONS,
+                "instructions": server_instructions(include_meta=include_meta),
             }
         elif method == "tools/list":
-            result = {"tools": mcp_schemas(engine.project, enable_define=enable_define)}
+            result = {
+                "tools": mcp_schemas(
+                    engine.project, enable_define=enable_define, include_meta=include_meta
+                )
+            }
         elif method == "tools/call":
             name = params.get("name")
             args = dict(params.get("arguments") or {})
@@ -97,6 +102,7 @@ def build_app(
                 ctx=CallContext(request_id=str(uuid.uuid4())),
                 enable_define=enable_define,
                 drafts_path=drafts_path,
+                include_meta=include_meta,
             )
             result = {
                 "content": [{"type": "text", "text": json.dumps(payload, default=str)}],

@@ -40,7 +40,7 @@ flowchart TB
 - Interpolation, dtype×op matrix, capability gates
 - Hidden `static_filters` (tenant isolation the model cannot omit)
 - Limits, field projection, optional pipelines (retrieve then Polars)
-- MCP advertisement (`tools/list` + `list_available_tools` / `run_tool`)
+- MCP advertisement (`tools/list`; by default also `list_available_tools` / `run_tool` — same validation path as named tools; `--no-meta-tools` to omit)
 - In-process wrappers for LangChain, LangGraph, OpenAI Agents, Anthropic
 
 The executor (`Engine`) runs **inside** `serve`, `test`, `validate --live`, and `connect` / `load_tools`. Application code does not import it.

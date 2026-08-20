@@ -198,7 +198,7 @@ def load_project(
     issues.extend(validate(tds))
     tools: dict[str, CompiledTool] = {}
     for spec in tds.tools:
-        schema, plan = compile_tool(spec)
+        schema, plan = compile_tool(spec, default_embedding=tds.defaults.embedding)
         tools[spec.name] = CompiledTool(
             name=spec.name,
             mcp_schema=schema,

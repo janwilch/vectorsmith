@@ -93,7 +93,7 @@ class MilvusAdapter(VectorBackendAdapter):
                 data=[req.vector],
                 limit=req.limit,
                 filter=expr or "",
-                output_fields=["*"],
+                output_fields=list(req.projection) if req.projection else ["*"],
             )
         except Exception as exc:
             raise BackendUnreachable(detail=str(exc)) from exc

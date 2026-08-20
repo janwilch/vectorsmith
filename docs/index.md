@@ -80,6 +80,6 @@ Store extras: see [vector stores](vector-stores.md) (`qdrant` · `pgvector` · `
 
 ## Status
 
-**0.1.1.** Read-only tools from YAML. Application code uses `from vectorsmith import load_tools` or `connect` — do not import `Engine`.
+**0.1.2.** Read-only tools from YAML. Application code uses `from vectorsmith import load_tools` or `connect` — do not import `Engine`.
 
 Source: [github.com/kjgpta/vectorsmith](https://github.com/kjgpta/vectorsmith).

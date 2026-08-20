@@ -22,6 +22,7 @@ def serve_http(
     public_url: str | None,
     env_file: Path | None,
     enable_define: bool = False,
+    include_meta: bool = True,
     name: str = DEFAULT_SERVER_NAME,
 ) -> None:
     if auth == "none" and not bind.startswith("127.0.0.1") and not bind.startswith("localhost"):
@@ -55,6 +56,7 @@ def serve_http(
     app = build_app(
         engine=engine,
         enable_define=enable_define,
+        include_meta=include_meta,
         auth=auth,
         public_url=public_url or f"http://{bind}",
         store=store,

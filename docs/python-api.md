@@ -113,7 +113,7 @@ Requires `vectorsmith[anthropic]` (or `pip install anthropic` plus `vectorsmith[
 | `truncated` | Hit `limit` |
 | `may_be_incomplete` | Pipeline over-fetch cap; caveat the answer |
 | `search_mode` | `dense` · `hybrid` · `none` |
-| `warnings` | e.g. `VB4001`–`VB4003` |
+| `warnings` | e.g. `VB4001`–`VB4004` |
 | `latency_ms` | Engine timing |
 | `exact_search` / `compiled_query` | Present on some results |
 

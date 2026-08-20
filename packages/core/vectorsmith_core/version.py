@@ -1,4 +1,4 @@
 """Engine and TDS version constants."""
 
-ENGINE_VERSION = "0.1.1"
+ENGINE_VERSION = "0.1.2"
 SUPPORTED_TDS: frozenset[str] = frozenset({"1"})

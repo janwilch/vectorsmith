@@ -29,47 +29,70 @@ LIVE_CATALOG_DESC = (
 LIVE_RUN_DESC = (
     "Run any VectorSmith tool by name with its arguments from "
     "list_available_tools. Use this for tools added to tools.yaml after Claude "
-    "connected; Desktop will not show those names in the connector list."
+    "connected; Desktop will not show those names in the connector list. "
+    "Arguments are re-validated against that tool's compiled inputSchema "
+    "(types, enums, limits); hidden static_filters still apply. Not a bypass."
 )
 SERVER_INSTRUCTIONS = (
     "VectorSmith reloads tools.yaml while you stay connected. Claude Desktop "
     "freezes the named tool list at connect. Call list_available_tools for the "
     "live catalog, then run_tool to invoke tools that are not in your original list."
 )
+SERVER_INSTRUCTIONS_NO_META = (
+    "VectorSmith compiled tools from tools.yaml. Call tools by their advertised "
+    "names. Stdio --watch recompiles on save; hosts that freeze tools/list still "
+    "need a reconnect to see new names."
+)
 META_TOOLS = frozenset({"list_available_tools", "run_tool"})
+
+
+def server_instructions(*, include_meta: bool = True) -> str:
+    return SERVER_INSTRUCTIONS if include_meta else SERVER_INSTRUCTIONS_NO_META
 
 
 def authoring_enabled(project: Project, enable_define: bool) -> bool:
     return enable_define or bool(project.tds.authoring.define_tool)
 
 
-def mcp_schemas(project: Project, *, enable_define: bool) -> list[dict[str, Any]]:
-    schemas: list[dict[str, Any]] = [
-        {
-            "name": "list_available_tools",
-            "description": LIVE_CATALOG_DESC,
-            "inputSchema": {"type": "object", "properties": {}},
-        },
-        {
-            "name": "run_tool",
-            "description": LIVE_RUN_DESC,
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "Tool name from list_available_tools",
-                    },
-                    "arguments": {
+def mcp_schemas(
+    project: Project,
+    *,
+    enable_define: bool,
+    include_meta: bool = True,
+) -> list[dict[str, Any]]:
+    schemas: list[dict[str, Any]] = []
+    if include_meta:
+        schemas.extend(
+            [
+                {
+                    "name": "list_available_tools",
+                    "description": LIVE_CATALOG_DESC,
+                    "inputSchema": {"type": "object", "properties": {}},
+                },
+                {
+                    "name": "run_tool",
+                    "description": LIVE_RUN_DESC,
+                    "inputSchema": {
                         "type": "object",
-                        "additionalProperties": True,
-                        "description": "Arguments matching that tool's inputSchema",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Tool name from list_available_tools",
+                            },
+                            "arguments": {
+                                "type": "object",
+                                "additionalProperties": True,
+                                "description": (
+                                    "Arguments for the named tool. Validated against "
+                                    "that tool's compiled inputSchema, not this envelope."
+                                ),
+                            },
+                        },
+                        "required": ["name"],
                     },
                 },
-                "required": ["name"],
-            },
-        },
-    ]
+            ]
+        )
     schemas.extend(project.mcp_tool_schemas())
     if authoring_enabled(project, enable_define):
         schemas.append(
@@ -112,16 +135,20 @@ async def dispatch(
     ctx: CallContext,
     enable_define: bool,
     drafts_path: Path,
+    include_meta: bool = True,
 ) -> dict[str, Any]:
-    if name == "list_available_tools":
-        return _list_available(engine.project, enable_define=enable_define)
-    if name == "run_tool":
+    if include_meta and name == "list_available_tools":
+        return _list_available(
+            engine.project, enable_define=enable_define, include_meta=include_meta
+        )
+    if include_meta and name == "run_tool":
         return await _run_named(
             engine,
             args,
             ctx=ctx,
             enable_define=enable_define,
             drafts_path=drafts_path,
+            include_meta=include_meta,
         )
     if name == "describe_collection" and authoring_enabled(engine.project, enable_define):
         report = await engine.introspect(
@@ -136,14 +163,18 @@ async def dispatch(
     return result.model_dump()
 
 
-def _list_available(project: Project, *, enable_define: bool) -> dict[str, Any]:
+def _list_available(
+    project: Project, *, enable_define: bool, include_meta: bool = True
+) -> dict[str, Any]:
     rows = [
         {
             "name": schema["name"],
             "description": schema.get("description"),
             "inputSchema": schema.get("inputSchema"),
         }
-        for schema in mcp_schemas(project, enable_define=enable_define)
+        for schema in mcp_schemas(
+            project, enable_define=enable_define, include_meta=include_meta
+        )
         if schema["name"] not in META_TOOLS
     ]
     return {
@@ -163,6 +194,7 @@ async def _run_named(
     ctx: CallContext,
     enable_define: bool,
     drafts_path: Path,
+    include_meta: bool = True,
 ) -> dict[str, Any]:
     inner = str(args.get("name") or "").strip()
     if not inner:
@@ -187,6 +219,7 @@ async def _run_named(
         ctx=ctx,
         enable_define=enable_define,
         drafts_path=drafts_path,
+        include_meta=include_meta,
     )
 
 

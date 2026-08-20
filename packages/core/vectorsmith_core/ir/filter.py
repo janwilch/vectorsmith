@@ -91,6 +91,18 @@ def bind(
     return _collapse(Or(kids))
 
 
+def ir_paths(node: IRNode | None) -> set[str]:
+    """Payload paths referenced by an IR tree (static + bound params)."""
+    if node is None:
+        return set()
+    if isinstance(node, Cond):
+        return {node.path}
+    out: set[str] = set()
+    for child in node.children:
+        out |= ir_paths(child)
+    return out
+
+
 def merge_and(*nodes: IRNode | None) -> IRNode | None:
     """AND-merge nodes, flattening nested Ands."""
     flat: list[IRNode] = []

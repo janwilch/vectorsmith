@@ -34,7 +34,7 @@ Compile, interpolate, synthesize built-ins, collect `VBxxxx` issues. No MCP serv
 
 | Flag | Meaning |
 |---|---|
-| `--live` | Ping the store (health, dims, sparse / hybrid) |
+| `--live` | Ping the store (health, embedding dim vs collection, sparse / hybrid, payload-path drift) |
 | `--json` | Issues as JSON on stdout |
 | `--strict` | Warnings → exit `1` |
 | `--env-file` | Keys used for `${VAR}` under `connections` |
@@ -76,10 +76,13 @@ Default when `--http` is omitted. The host **spawns** this process.
 |---|---|---|
 | `--name` | `VectorSmith` | MCP `serverInfo.name` — match the `mcpServers` / `mcp_servers` key |
 | `--env-file` | | Interpolation map |
-| `--watch` / `--no-watch` | `--watch` | Reload YAML (and `tools.drafts.yaml`) on save |
+| `--watch` / `--no-watch` | `--watch` | Reload YAML (and `tools.drafts.yaml`) on save. Recompiles plans; Desktop still freezes the named list |
 | `--enable-define` | off | Advertise `describe_collection` / `define_tool` (or set `authoring.define_tool: true` in YAML) |
+| `--meta-tools` / `--no-meta-tools` | `--meta-tools` | Advertise `list_available_tools` / `run_tool`. Off = compiled tools only |
 
-Always advertised: compiled tools **plus** `list_available_tools` and `run_tool` (Desktop freezes the named list at connect).
+Default: compiled tools **plus** `list_available_tools` and `run_tool`. Those two exist because Claude Desktop freezes `tools/list` at connect. `run_tool` is **not** a schema bypass — inner args go through the named tool’s jsonschema and `static_filters` still AND. They are not advertised by `load_tools`. Use `--no-meta-tools` to hide them.
+
+`--watch` reloads and recompiles; it does not make Desktop refresh the Connectors UI. Details: [FAQ](faq.md).
 
 Drafts are written to **`./tools.drafts.yaml` (process cwd)**. Set `cwd` in the host config.
 
@@ -96,7 +99,7 @@ vectorsmith serve tools.yaml --http 0.0.0.0:8080 --auth builtin --public-url htt
 | `--auth` | `builtin` | `none` (loopback only) or `builtin` |
 | `--public-url` | required for `builtin` | Must be `https://…` |
 
-`--watch` is **ignored** on HTTP. Restart after YAML edits.
+`--watch` is **ignored** on HTTP. Restart after YAML edits. `--meta-tools` / `--no-meta-tools` and `--enable-define` apply the same as stdio.
 
 `GET /healthz` → `{"ok": true}`. `builtin` OAuth: PKCE, DCR, tokens in `~/.vectorsmith/authstate.db` (mode 0600). First start writes the access secret once to `~/.vectorsmith/access-secret.once` (mode 0600) — it is not printed.
 

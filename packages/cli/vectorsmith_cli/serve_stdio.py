@@ -17,10 +17,10 @@ from mcp.server.stdio import stdio_server
 
 from vectorsmith_cli.identity import DEFAULT_SERVER_NAME, PRODUCT_NAME
 from vectorsmith_cli.serve_common import (
-    SERVER_INSTRUCTIONS,
     dispatch,
     expire_old_drafts,
     mcp_schemas,
+    server_instructions,
 )
 from vectorsmith_cli.stdio_guard import install as install_stdio_guard
 from vectorsmith_cli.validate_cmd import _load_env
@@ -59,6 +59,7 @@ def serve_stdio(
     *,
     env_file: Path | None = None,
     enable_define: bool = False,
+    include_meta: bool = True,
     watch: bool = True,
     name: str = DEFAULT_SERVER_NAME,
 ) -> None:
@@ -94,7 +95,9 @@ def serve_stdio(
             if conn is not None:
                 state["connection"] = conn
             tools_out = []
-            for schema in mcp_schemas(state["project"], enable_define=enable_define):
+            for schema in mcp_schemas(
+                state["project"], enable_define=enable_define, include_meta=include_meta
+            ):
                 tools_out.append(
                     types.Tool(
                         name=schema["name"],
@@ -119,6 +122,7 @@ def serve_stdio(
                     ctx=CallContext(request_id=str(uuid.uuid4())),
                     enable_define=enable_define,
                     drafts_path=drafts_path,
+                    include_meta=include_meta,
                 )
                 text = json.dumps(payload, default=str)
                 return types.CallToolResult(
@@ -135,7 +139,7 @@ def serve_stdio(
             name,
             version=ENGINE_VERSION,
             title=PRODUCT_NAME,
-            instructions=SERVER_INSTRUCTIONS,
+            instructions=server_instructions(include_meta=include_meta),
             on_list_tools=on_list_tools,
             on_call_tool=on_call_tool,
         )

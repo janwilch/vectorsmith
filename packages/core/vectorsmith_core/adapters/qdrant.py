@@ -10,6 +10,34 @@ from vectorsmith_core.errors import BackendUnreachable
 from vectorsmith_core.ir.filter import And, Cond, IRNode, Or
 
 
+def _payload_arg(projection: list[str] | None) -> Any:
+    if not projection:
+        return True
+    from qdrant_client.http import models as qm
+
+    selector = getattr(qm, "PayloadSelectorInclude", None)
+    if selector is None:
+        return True
+    return selector(include=list(projection))
+
+
+def _vector_dim(info: Any) -> int | None:
+    cfg = getattr(info, "config", None)
+    params = getattr(cfg, "params", cfg)
+    vectors = getattr(params, "vectors", None) if params is not None else None
+    size = getattr(vectors, "size", None)
+    if isinstance(size, int):
+        return size
+    if isinstance(vectors, dict) and vectors:
+        first = next(iter(vectors.values()))
+        n = getattr(first, "size", None)
+        if isinstance(n, int):
+            return n
+        if isinstance(first, dict) and isinstance(first.get("size"), int):
+            return int(first["size"])
+    return None
+
+
 def _match(cond: Cond) -> dict[str, Any]:
     path, op, value = cond.path, cond.op, cond.value
     if op in {"eq"}:
@@ -132,7 +160,7 @@ class QdrantAdapter(VectorBackendAdapter):
             points = await client.retrieve(
                 collection_name=req.collection,
                 ids=[point_id],
-                with_payload=True,
+                with_payload=_payload_arg(req.projection),
                 with_vectors=False,
             )
             return RowBatch(rows=[_row(p, None) for p in points], exhausted=True)
@@ -148,7 +176,7 @@ class QdrantAdapter(VectorBackendAdapter):
                 collection_name=req.collection,
                 scroll_filter=native,
                 limit=req.limit,
-                with_payload=True,
+                with_payload=_payload_arg(req.projection),
                 with_vectors=False,
             )
             rows = [_row(p, None) for p in points]
@@ -159,7 +187,7 @@ class QdrantAdapter(VectorBackendAdapter):
                 query=req.vector,
                 query_filter=native,
                 limit=req.limit,
-                with_payload=True,
+                with_payload=_payload_arg(req.projection),
             )
             hits = getattr(res, "points", res)
         else:
@@ -168,7 +196,7 @@ class QdrantAdapter(VectorBackendAdapter):
                 query_vector=req.vector,
                 query_filter=native,
                 limit=req.limit,
-                with_payload=True,
+                with_payload=_payload_arg(req.projection),
             )
         rows = [_row(h, getattr(h, "score", None)) for h in hits]
         return RowBatch(rows=rows, exhausted=True)
@@ -200,7 +228,7 @@ class QdrantAdapter(VectorBackendAdapter):
             query=query,
             query_filter=native,
             limit=req.limit,
-            with_payload=True,
+            with_payload=_payload_arg(req.projection),
         )
         hits = getattr(res, "points", res)
         rows = [_row(h, getattr(h, "score", None)) for h in hits]
@@ -228,7 +256,7 @@ class QdrantAdapter(VectorBackendAdapter):
         if params is not None:
             sparse_cfg = getattr(getattr(params, "params", params), "sparse_vectors", None)
             sparse = bool(sparse_cfg)
-        return {"sparse": sparse, "indexed": True}
+        return {"sparse": sparse, "indexed": True, "dim": _vector_dim(info)}
 
     async def aclose(self) -> None:
         if self._client is not None:

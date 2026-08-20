@@ -26,7 +26,13 @@ The MCP process cannot start. Common cause: sandboxed `~/Downloads` venv (`Permi
 
 ### Claude never sees a tool I just added to YAML
 
-Desktop freezes the named list at connect. Stdio `--watch` reloads the server; call `list_available_tools` then `run_tool`. Or reconnect. HTTP `serve` does not watch — restart the process.
+Desktop freezes the named list at connect. Stdio `--watch` **recompiles** the process (new YAML → new plans and schemas). Desktop still ignores `notifications/tools/list_changed`, so the Connectors UI stays stale until reconnect. Default `serve` advertises `list_available_tools` then `run_tool` so new names stay reachable without reconnecting. HTTP `serve` does not watch — restart the process.
+
+Use `--no-meta-tools` if you do not want those two dispatchers; then a reconnect (or a host that honors `tools/list_changed`) is required after YAML edits.
+
+### Is `run_tool` a way around enums and tenant filters?
+
+No. `run_tool` exists because Claude Desktop freezes `tools/list`. It is MCP-only (`load_tools` / `connect` never advertise it). Calling it runs the **same** `engine.call` path as a named tool: jsonschema on that tool’s compiled `inputSchema` (types, enums, limits), then hidden `static_filters` AND-merged into the store filter. The envelope field `arguments` allows extra keys at the MCP layer; they are still validated against the inner schema. Disable with `--no-meta-tools`.
 
 ### `serve --http` exits 2 or 3
 
@@ -47,11 +53,11 @@ No. Vendor servers are cluster admin (often including writes). VectorSmith is **
 
 ### Why isn’t `tenant` in the tool schema?
 
-`static_filters` are applied on every call and are not advertised. Put org isolation there so the model cannot skip it.
+`static_filters` are applied on every call and are not advertised. Put org isolation there so the model cannot skip it. That is a payload field, not Pinecone namespace or Weaviate `connections.*.tenant` — [vector stores](vector-stores.md#tenancy-vs-payload-filters).
 
-### `defaults.embedding` does not change the model
+### Which embedding model actually runs?
 
-The field is valid TDS but the compiler does not read it yet. Set `query.embedding` on the search tool, or keep the default `fastembed/BAAI/bge-small-en-v1.5`. The collection dims must match.
+`query.embedding` on the tool if set, otherwise `defaults.embedding` (TDS default `fastembed/BAAI/bge-small-en-v1.5`). The collection vector size must match. `validate --live` errors **VB2017** on a known-model dim mismatch and warns **VB2018** if the model id is not in the registry.
 
 ### Hybrid search fails (`VB2012` / `VB2013`)
 

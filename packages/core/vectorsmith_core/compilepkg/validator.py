@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from collections.abc import Set as AbstractSet
 from typing import Any, Literal
 
@@ -284,4 +285,88 @@ def _builtin_lints(tds: TDSFile) -> list[Any]:
                             tool=f"{key}_{cname}",
                         )
                     )
+    return issues
+
+
+_SKIP_PATHS = frozenset({"id", "_id", "_score"})
+
+
+def embedding_dim(model: str) -> int | None:
+    """Known FastEmbed model size, or None if the id is not in the registry."""
+    from vectorsmith_core.embed.models import DIMS
+
+    if model in DIMS:
+        return DIMS[model]
+    return DIMS.get(model.split("/", 1)[-1])
+
+
+def live_contract_issues(
+    tds: TDSFile,
+    plans: Mapping[str, Any],
+    native: Mapping[str, Mapping[str, Any]],
+) -> list[Any]:
+    """Embedding dim + payload-path checks using live introspect (``validate --live``).
+
+    ``plans`` maps tool name → ``ExecutionPlan``. ``native`` maps
+    ``connection:collection`` → ``{dim, fields, sparse}``.
+    """
+    from vectorsmith_core.compilepkg.compiler import ExecutionPlan
+    from vectorsmith_core.ir.filter import ir_paths
+
+    issues: list[Any] = []
+    default_model = tds.defaults.embedding
+    for name, plan in plans.items():
+        if not isinstance(plan, ExecutionPlan):
+            continue
+        coll = plan.collection if isinstance(plan.collection, str) else None
+        if not plan.connection or not coll:
+            continue
+        key = f"{plan.connection}:{coll}"
+        info = native.get(key)
+        if not info:
+            continue
+        model = plan.embedding or default_model
+        if plan.kind in {"search", "pipeline"}:
+            dim = embedding_dim(model)
+            live_dim = info.get("dim")
+            if dim is None:
+                issues.append(
+                    _issue(
+                        "VB2018",
+                        f"unknown embedding model '{model}' — cannot check collection dim",
+                        severity="warning",
+                        tool=name,
+                    )
+                )
+            elif isinstance(live_dim, int) and live_dim != dim:
+                issues.append(
+                    _issue(
+                        "VB2017",
+                        f"collection dim {live_dim} != embedder '{model}' ({dim})",
+                        tool=name,
+                        path=coll,
+                    )
+                )
+        fields = info.get("fields")
+        if not isinstance(fields, list) or not fields:
+            continue
+        field_set = {str(f) for f in fields}
+        wanted: set[str] = set()
+        for cond in plan.static_conds:
+            wanted |= ir_paths(cond)
+        for cond in plan.param_conds:
+            wanted |= ir_paths(cond)
+        wanted |= {p for p in (plan.projection or []) if p}
+        for path in sorted(wanted - _SKIP_PATHS):
+            head = path.split(".", 1)[0]
+            if path not in field_set and head not in field_set:
+                issues.append(
+                    _issue(
+                        "VB4004",
+                        f"payload path '{path}' was not seen on collection '{coll}'",
+                        severity="warning",
+                        tool=name,
+                        path=path,
+                    )
+                )
     return issues

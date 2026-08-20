@@ -54,6 +54,14 @@ def serve_cmd(
     public_url: str | None = typer.Option(None, "--public-url"),
     env_file: Path | None = typer.Option(None, "--env-file"),
     enable_define: bool = typer.Option(False, "--enable-define"),
+    meta_tools: bool = typer.Option(
+        True,
+        "--meta-tools/--no-meta-tools",
+        help=(
+            "Advertise list_available_tools / run_tool (Desktop freeze workaround). "
+            "Off = compiled tools only."
+        ),
+    ),
     watch: bool = typer.Option(True, "--watch/--no-watch"),
     name: str = typer.Option(
         DEFAULT_SERVER_NAME,
@@ -70,11 +78,17 @@ def serve_cmd(
             public_url=public_url,
             env_file=env_file,
             enable_define=enable_define,
+            include_meta=meta_tools,
             name=name,
         )
         return
     serve_stdio(
-        tools, env_file=env_file, enable_define=enable_define, watch=watch, name=name
+        tools,
+        env_file=env_file,
+        enable_define=enable_define,
+        include_meta=meta_tools,
+        watch=watch,
+        name=name,
     )
 
 

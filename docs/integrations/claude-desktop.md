@@ -59,7 +59,7 @@ vectorsmith init ./demo --print-desktop-config --name invoices
 
 Ask: “Which Globex invoices are overdue?”
 
-Desktop freezes the named tool list at connect. At connect you get your compiled tools **plus** `list_available_tools` and `run_tool`. After a YAML reload (stdio `--watch`), new tools are reachable through those two dispatchers without reconnecting. Details: [Desktop quickstart](../quickstart-desktop.md).
+Desktop freezes the named tool list at connect. At connect you get your compiled tools **plus** `list_available_tools` and `run_tool` (same jsonschema + `static_filters` as calling the tool by name). After a YAML reload (stdio `--watch`), new tools are reachable through those two without reconnecting. Omit them with `--no-meta-tools`. Details: [Desktop quickstart](../quickstart-desktop.md) · [FAQ](../faq.md).
 
 Set `cwd` to the project directory so `tools.drafts.yaml` (authoring) is written next to the YAML.
 

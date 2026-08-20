@@ -104,7 +104,24 @@ def mcp_schema(tool: ToolSpec) -> dict[str, Any]:
     }
 
 
-def compile_tool(tool: ToolSpec) -> tuple[dict[str, Any], ExecutionPlan]:
+def _plan_embedding(
+    query: Any,
+    retrieve: Any,
+    default_embedding: str | None,
+) -> str | None:
+    if query is not None and getattr(query, "embedding", None):
+        return str(query.embedding)
+    rq = getattr(retrieve, "query", None) if retrieve is not None else None
+    if rq is not None and getattr(rq, "embedding", None):
+        return str(rq.embedding)
+    return default_embedding
+
+
+def compile_tool(
+    tool: ToolSpec,
+    *,
+    default_embedding: str | None = None,
+) -> tuple[dict[str, Any], ExecutionPlan]:
     static = [Cond(path=sf.path, op=sf.op, value=sf.value) for sf in tool.static_filters]
     params = [
         Cond(path=p.path or p.name, op=p.op or "eq", value=ParamRef(p.name))
@@ -128,7 +145,7 @@ def compile_tool(tool: ToolSpec) -> tuple[dict[str, Any], ExecutionPlan]:
         query_required=bool(query.required) if query else False,
         mode=(query.mode if query else "dense"),
         alpha=query.alpha if query else 0.5,
-        embedding=query.embedding if query else None,
+        embedding=_plan_embedding(query, retrieve, default_embedding),
         fetch_k_param=fetch.k_param if fetch else "limit",
         overfetch_factor=fetch.overfetch_factor if fetch else 10,
         max_candidates=fetch.max_candidates if fetch else 2000,

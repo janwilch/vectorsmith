@@ -145,9 +145,11 @@ class Engine:
 
     async def validate_live(self) -> list[Issue]:
         from vectorsmith_core.api import Issue
-        from vectorsmith_core.compilepkg.validator import validate
+        from vectorsmith_core.compilepkg.validator import live_contract_issues, validate
+        from vectorsmith_core.introspect.sampling import infer_fields
 
         sparse: dict[str, bool] = {}
+        native_map: dict[str, dict[str, Any]] = {}
         extra: list[Issue] = []
         for name in self.project.tds.connections:
             try:
@@ -164,8 +166,19 @@ class Engine:
                     )
                 collections = await adapter.list_collections()
                 for coll in collections:
-                    native = await adapter.introspect_native(coll)
-                    sparse[f"{name}:{coll}"] = bool(native and native.get("sparse"))
+                    info = dict((await adapter.introspect_native(coll)) or {})
+                    if not info.get("fields"):
+                        try:
+                            sample = await adapter.sample(coll, 50)
+                            info["fields"] = [
+                                str(f.get("path") or f.get("name") or "")
+                                for f in infer_fields(sample)
+                            ]
+                            info["fields"] = [p for p in info["fields"] if p]
+                        except Exception:  # noqa: BLE001 — sample is best-effort
+                            info.setdefault("fields", None)
+                    native_map[f"{name}:{coll}"] = info
+                    sparse[f"{name}:{coll}"] = bool(info.get("sparse"))
             except Exception as exc:  # noqa: BLE001
                 extra.append(
                     Issue(
@@ -176,6 +189,8 @@ class Engine:
                     )
                 )
         extra.extend(validate(self.project.tds, live_sparse=sparse))
+        plans = {n: t.plan for n, t in self.project.tools.items() if t.plan is not None}
+        extra.extend(live_contract_issues(self.project.tds, plans, native_map))
         seen = {(i.code, i.tool, i.path, i.message) for i in self.project.issues}
         out = list(self.project.issues)
         for issue in extra:

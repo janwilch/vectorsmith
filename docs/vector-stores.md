@@ -53,6 +53,20 @@ Same tools (`search`, `lookup`, `count`, `scroll`, `pipeline`) compile against e
 
 Connection fields: [tools.yaml → connections](tools-yaml-reference.md#connections).
 
+## Tenancy vs payload filters
+
+`static_filters` in YAML are **payload predicates** (e.g. `tenant: acme` on the point/row). The compiler ANDs them on every call; they are not in the MCP schema. That is the VectorSmith isolation layer.
+
+Store-native partitions are a different knob:
+
+| Store | What `target.collection` means | Native tenancy (not `static_filters`) |
+|---|---|---|
+| Qdrant, Chroma, Milvus, pgvector | Collection / table name | None in the adapter. Use payload `static_filters`. |
+| **Pinecone** | **Namespace** on the configured index (`connections.*.host`). Optional `connections.*.namespace` is the connection default. | Isolation by namespace is `collection: that_namespace`, not a metadata filter. Payload `static_filters` still apply **inside** the namespace. |
+| **Weaviate** | Collection / class name | `connections.*.tenant` is the Weaviate multi-tenancy tenant on the client. Payload `static_filters` do **not** select that tenant. |
+
+Do not expect `{ path: tenant, op: eq, value: acme }` to switch a Pinecone namespace or a Weaviate tenant. Set the namespace/collection or connection `tenant` in YAML, and keep payload filters for fields stored on the objects.
+
 ## Mixing stores
 
 One YAML file can declare several connections with different backends. That is still **one** MCP server (`vectorsmith serve`). Each tool names `target.connection`. Two Claude connectors still mean two YAML files and two `serve --name` processes.
