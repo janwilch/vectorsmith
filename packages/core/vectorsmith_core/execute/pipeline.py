@@ -53,26 +53,29 @@ async def execute_pipeline(
         df, drift_warn = _cast_expr_columns(df, steps)
         warnings.extend(drift_warn)
 
+    from vectorsmith_core.observe.tracing import start_span
+
     for step in steps[1:]:
-        if isinstance(step, PostFilterStep):
-            if df.is_empty():
-                continue
-            ast = parse_expr(step.post_filter.expr)
-            series, null_cmp = eval_expr(ast, df, args)
-            if series.dtype != pl.Boolean:
-                series = series.cast(pl.Boolean, strict=False).fill_null(False)
-            df = df.filter(series)
-            if null_cmp:
-                warnings.append("VB4002")
-        elif isinstance(step, GroupByStep):
-            df = _group_by(df, step, args)
-        elif isinstance(step, SortStep):
-            if step.sort.by in df.columns:
-                df = df.sort(step.sort.by, descending=step.sort.desc)
-        elif isinstance(step, ProjectStep):
-            keep = [c for c in step.project.fields if c in df.columns]
-            if keep:
-                df = df.select(keep)
+        with start_span("vectorsmith.pipeline.step", step_kind=type(step).__name__):
+            if isinstance(step, PostFilterStep):
+                if df.is_empty():
+                    continue
+                ast = parse_expr(step.post_filter.expr)
+                series, null_cmp = eval_expr(ast, df, args)
+                if series.dtype != pl.Boolean:
+                    series = series.cast(pl.Boolean, strict=False).fill_null(False)
+                df = df.filter(series)
+                if null_cmp:
+                    warnings.append("VB4002")
+            elif isinstance(step, GroupByStep):
+                df = _group_by(df, step, args)
+            elif isinstance(step, SortStep):
+                if step.sort.by in df.columns:
+                    df = df.sort(step.sort.by, descending=step.sort.desc)
+            elif isinstance(step, ProjectStep):
+                keep = [c for c in step.project.fields if c in df.columns]
+                if keep:
+                    df = df.select(keep)
 
     out_rows = df.to_dicts() if not df.is_empty() else []
     incomplete = len(out_rows) < requested and not exhausted and cur_k >= plan.max_candidates

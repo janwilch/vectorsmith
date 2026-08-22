@@ -27,9 +27,9 @@ Worked files: [`examples/qdrant_invoices/tools.invoices.yaml`](https://github.co
 On `validate`, `serve`, `test`, `load_tools`, or `connect`:
 
 1. **Read** — Safe YAML only. Max 1 MB, depth 20, 100 anchors. Root must be a mapping.
-2. **Interpolate** — `${VAR}` and `${VAR:-default}` are replaced **only** under `connections`. Anywhere else, a `${…}` string is an error (`VB1003`). The env map is: CLI `--env-file` only; Python `os.environ` + `env=` + `env_file=`.
+2. **Interpolate** — `${VAR}` and `${VAR:-default}` only on the [allowed paths](#interpolation-paths). Anywhere else, a `${…}` string is an error (`VB1003`). The env map is: CLI `--env-file` only; Python `os.environ` + `env=` + `env_file=`.
 3. **Lint secrets** — Literal API keys, DSNs with passwords, high-entropy strings under `connections` fail load. Put secrets in the environment or `--env-file`.
-4. **Parse** — Pydantic models (`tds_version: "1"`). Unknown keys are kept as **warnings** (`VB0001`), not hard errors.
+4. **Parse** — Pydantic models (`tds_version: "1"` or `"2"`). v1 still loads with **VB0002**. Unknown keys are **warnings** (`VB0001`), not hard errors.
 5. **Synthesize built-ins** — Opt-in `builtin_tools` become extra tools (`search_<connection>`, …). They never appear as entries you typed under `tools:`.
 6. **Validate** — Names, kinds, dtype×op, backend capabilities, hybrid, pipelines. All issues are collected (`VBxxxx`).
 7. **Compile** — Each tool becomes an MCP `inputSchema` plus an execution plan (filters, embedding, limits).
@@ -78,11 +78,15 @@ tools:
 
 | Key | Required | Meaning |
 |---|---|---|
-| `tds_version` | yes | Must be `"1"`. |
+| `tds_version` | yes | `"1"` (deprecated, **VB0002**) or `"2"`. `vectorsmith migrate --from 1 --to 2`. |
 | `connections` | yes | Named stores. A tool’s `target.connection` must be one of these keys. |
 | `tools` | no | User-authored tools. Empty is valid if you only enable built-ins. |
 | `defaults` | no | Default embedding model. |
 | `authoring` | no | Allow Claude to *draft* new tools (`define_tool`). Drafts never write this file until `vectorsmith approve`. |
+| `security` | no | Tenancy, auth defaults, RBAC, rate limits. |
+| `observability` | no | Audit, optional tracing, optional Prometheus metrics. Never includes row payloads or credentials. |
+| `profiles` | no | `profiles.enterprise.security.hardening` for `validate --profile enterprise`. |
+| `meta` | no | Catalog version + deprecated tool list (TDS v2). |
 
 One file = one project = one `serve --name` (one MCP connector) or one `load_tools(...)` source. Two collections you want as separate connectors → two files (this repo: invoices + tickets).
 
@@ -100,9 +104,25 @@ connections:
     api_key: ${QDRANT_API_KEY:-}
 ```
 
+### Interpolation paths
+
+`${VAR}` is legal only here (elsewhere → **VB1003**):
+
+| Path | Examples |
+|---|---|
+| `connections.*` | `url`, `api_key`, `dsn`, `host` |
+| `defaults.embedding.config.*` | `api_key`, `base_url` |
+| `tools[].query.embedding.config.*` | same |
+| `tools[].query.expand.config.*` | LLM API key / URL |
+| `tools[].rerank.config.*` | rerank API key / URL |
+| `security.auth.*` | `jwks_url`, `keys_file` |
+| `security.rate_limit.redis_url` | Redis for shared quotas |
+| `observability.audit.url` / `.path` | Audit sink |
+| `observability.tracing.endpoint` | OTLP |
+
 ### Secrets
 
-Allowed **only** under `connections`:
+Allowed **only** under `connections` (and embedding / expand / rerank `config` as `${VAR}`):
 
 | Form | Result |
 |---|---|
@@ -128,7 +148,26 @@ CLI: `--env-file .env` (only keys in that file — the process environment is **
 
 **pgvector table mode** — `mode: table` or `vector_column: null`. No vector column, so `kind: search` and `query:` are rejected (`VB2016`). Use `lookup` / `count` / `scroll` / `pipeline`.
 
-Every connection also accepts `builtin_tools` and `builtin_defaults` (below).
+Every connection also accepts `builtin_tools`, `builtin_defaults`, and `credentials` (below).
+
+### `credentials`
+
+Default `provider: env` — values come from interpolated YAML / `--env-file` (what `serve` and `connect` use today).
+
+```yaml
+connections:
+  invoices:
+    backend: qdrant
+    url: ${QDRANT_URL}
+    credentials:
+      provider: vault            # env | vault | aws_sm | k8s
+      vault:
+        addr: ${VAULT_ADDR:-}
+        path: secret/data/qdrant
+        role: vectorsmith
+```
+
+`serve` / `connect` still resolve with the **env** resolver unless you construct `VaultCredentialResolver` in process (`vectorsmith_core.security.credentials`) and pass it into the internal engine. `aws_sm` / `k8s` are accepted on the model; missing secrets still raise `MissingEnvError` with the path. Do not put live vault tokens in YAML.
 
 ### Many connections in one file
 
@@ -194,11 +233,21 @@ Unrestricted `semantic_search` next to your own search tools warns (`VB3003`). P
 ```yaml
 defaults:
   embedding: fastembed/BAAI/bge-small-en-v1.5
+  # or:
+  # embedding:
+  #   provider: openai          # fastembed | openai | azure_openai | http | cohere
+  #   model: text-embedding-3-large
+  #   dims: 3072                # required for unknown / http models
+  #   config:
+  #     api_key: ${EMBED_API_KEY}
+  #     base_url: ${EMBED_BASE_URL:-}
 ```
 
-TDS default for this key is `fastembed/BAAI/bge-small-en-v1.5`. The compiler copies it onto each tool’s execution plan. Per-tool `query.embedding` (or `retrieve.query.embedding` on a pipeline retrieve) **wins** when set.
+A string is still the FastEmbed (or `openai/` / `cohere/` prefixed) model id. Object form sets `provider`, `model`, optional `dims`, and `config`. `${VAR}` is allowed under **`config` only** (same secret lint as connections). Per-tool `query.embedding` (string or object) **wins**.
 
-The collection’s vector size must match the model (the invoice example is 384-dim `BAAI/bge-small-en-v1.5`). `validate --live` checks this for known FastEmbed ids (**VB2017**) and warns if the model string is unknown (**VB2018**).
+Install `vectorsmith[embed-openai]` or `vectorsmith[embed-cohere]` for those providers (**VB2019** if missing). HTTP uses `httpx` (already a core dep).
+
+The collection’s vector size must match. `validate --live` errors **VB2017** on dim mismatch, warns **VB2018** if the model id is unknown and `dims` was omitted. `validate --live-embed` POSTs one probe text and checks the returned length.
 
 ---
 
@@ -280,11 +329,37 @@ Present = this tool can take a text string and embed it.
 |---|---|---|
 | `param` | `query` | Argument name on the compiled schema |
 | `required` | `false` | If false and omitted at call time → filter-only retrieve |
-| `embedding` | `defaults.embedding` | Model id |
+| `embedding` | `defaults.embedding` | Model id string, or `{provider, model, dims, config}` |
 | `mode` | `dense` | `dense` or `hybrid` |
 | `alpha` | `0.5` | Hybrid mix, 0–1 |
+| `min_score` | | Drop hits below this score (`0`–`1`). Qdrant gets `score_threshold`; others post-filter (**VB2022** if out of range; **VB2004** warning if the backend has no native threshold) |
+| `ef` | | HNSW `ef` where supported (Qdrant). **VB2023** warning on other backends |
+| `expand` | off | Optional LLM rewrite. See below. |
 
 `mode: hybrid` needs a backend with hybrid (Qdrant, Weaviate, Milvus, Pinecone) **and** sparse vectors on the collection. Confirm with `vectorsmith validate --live` (`VB2012` / `VB2013`). Chroma and pgvector do not support hybrid.
+
+#### `query.expand`
+
+Off by default. When `enabled`, the engine asks a provider for up to `variants` (1–5) rewrites, embeds **original + variants**, searches each, and keeps the best `_score` per id. Expand counts against `security.rate_limit.per_principal.llm_requests_per_minute` when set. Failure → original query only + **VB4030**.
+
+```yaml
+query:
+  param: query
+  expand:
+    enabled: true
+    provider: openai          # openai | http | none
+    model: gpt-4o-mini
+    variants: 3
+    config:
+      api_key: ${LLM_API_KEY}
+      base_url: ${LLM_BASE_URL:-}
+      prompt: |
+        Rewrite this search query into {variants} diverse phrases.
+        Query: {query}
+        Return JSON array of strings.
+```
+
+`provider: none` with `enabled: true` is a no-op (original query only) unless a test hook is attached.
 
 ### `parameters`
 
@@ -301,8 +376,30 @@ Up to 12. Each becomes an argument on the tool schema. If the caller omits an op
 | `enum` | ≤ 100 values; steers the model. Unusual with ops other than `eq`/`ne`/`in`/`nin` (`VB2005`). |
 | `default` | Compiled into the JSON schema |
 | `max` | Upper bound for numeric params |
+| `resolve` | Optional fuzzy / enum lookup. See below. |
 
 `in` / `nin` / `contains_*` compile as JSON arrays. `datetime` compiles as `string` + `format: date-time`.
+
+#### `parameters[].resolve`
+
+```yaml
+parameters:
+  - name: client
+    path: client_name
+    dtype: keyword
+    op: eq
+    resolve:
+      kind: directory          # directory | enum
+      connection: invoices     # default: tool target
+      collection: invoices
+      field: client_name
+      min_confidence: 0.72
+      max_candidates: 5000
+      cache_ttl_s: 600
+```
+
+- `enum` — exact match against the parameter `enum` list; no store round-trip.
+- `directory` — scroll distinct values, then fuzzy-match (`difflib`). Exact `enum` hits skip scroll. Unresolved → empty result, **VB4020**, and `message` with alternatives (not an exception). **VB4021** if the backend cannot scroll (Pinecone). The MCP schema **omits** `enum` when `kind: directory` so typos can reach the resolver.
 
 ### Operators
 
@@ -329,9 +426,151 @@ Applied on **every** call, including through MCP `run_tool`. Not advertised to t
 static_filters:
   - { path: tenant, op: eq, value: acme }
   - { path: status, op: eq, value: overdue }   # named “overdue only” tool
+
+# equivalent object form — must_not excludes rows
+static_filters:
+  must:
+    - { path: tenant, op: eq, value: acme }
+  must_not:
+    - { path: archived, op: eq, value: true }
 ```
 
-Ops here are the LCD set (`eq` `ne` `gt` `gte` `lt` `lte` `in` `nin`). Values are literals, not `${VAR}` (interpolation is connections-only).
+A bare list is shorthand for `must`. Do not mix a list with `must`/`must_not` keys (**VB2021**). `must_not` ops are the LCD set (`eq` `ne` `gt` `gte` `lt` `lte` `in` `nin`) — anything else is **VB2020**. Neither form appears in the MCP schema. Values are literals, not `${VAR}`.
+
+### `security.tenancy`
+
+Request-scoped payload isolation. The value comes from the authenticated caller (JWT claim or HTTP header), not from the model. The compiled MCP schema never lists this field.
+
+```yaml
+security:
+  tenancy:
+    mode: claim                 # none | static | claim | header
+    claim: tenant_id            # required when mode is claim (VB4011)
+    header: X-Tenant-Id         # used when mode is header
+    path: tenant_id             # payload field
+    op: eq                      # eq only
+    enforce: strict             # strict | override | warn
+```
+
+| `mode` | Meaning |
+|---|---|
+| `none` / `static` | Compile-time `static_filters` only (default). |
+| `claim` | AND `{path} eq claims[claim]` on every `engine.call` / `run_tool`. |
+| `header` | Same, from the named HTTP header. |
+
+`enforce: strict` rejects a model argument that conflicts with the tenancy path (**VB4010**). `override` replaces it silently; `warn` replaces it and adds a result warning. **VB4012** warns at `validate` if a tool parameter uses the same path.
+
+Request-scoped modes need HTTP plus caller identity (`claim` needs JWT / API-key claims). Stdio and `load_tools` have no caller principal; keep `mode: none` or `static` there.
+
+### `security.auth`
+
+Optional. CLI `--auth` / `--jwks-url` / `--api-keys-file` are the source of truth at serve time; YAML fills defaults. `${VAR}` is allowed under `security.auth` (e.g. `jwks_url: ${JWKS_URL}`).
+
+```yaml
+security:
+  auth:
+    mode: jwt                    # documentation; pass --auth jwt
+    jwt:
+      issuer: https://auth.example.com
+      audience: vectorsmith
+      jwks_url: ${JWKS_URL}
+      algorithms: [RS256, ES256]
+      principal_claim: sub
+    api_key:
+      header: Authorization
+      scheme: Bearer
+      keys_file: ${API_KEYS_FILE}
+```
+
+### `security.rbac`
+
+Off by default. When `enabled: true`, every `engine.call` / `run_tool` checks the caller's role claim against `roles.*.allow`. `deny_tools` wins even for `allow: ["*"]`.
+
+```yaml
+security:
+  rbac:
+    enabled: true
+    default_role: viewer
+    role_claim: roles
+    roles:
+      viewer:
+        allow: [search_invoices]
+      admin:
+        allow: ["*"]
+    deny_tools: [define_tool]
+```
+
+**VB4013** if enabled with no roles. **VB4014** warning if an allow list names an unknown tool. `list_available_tools` / `run_tool` themselves are not allow-gated; the inner `run_tool` name is.
+
+### `security.rate_limit`
+
+Off by default. When enabled, `engine.call` counts global, per-principal, and per-tool windows. HTTP maps `RateLimited` to **429** with `retry_after_s`.
+
+```yaml
+security:
+  rate_limit:
+    enabled: true
+    store: memory                 # memory | redis
+    redis_url: ${REDIS_URL:-}
+    global:
+      requests_per_minute: 120
+    per_principal:
+      requests_per_minute: 60
+      embed_requests_per_minute: 30
+      llm_requests_per_minute: 10
+    per_tool:
+      search_invoices: 30/minute
+```
+
+### `observability.audit`
+
+JSONL events for each named tool call (not the `run_tool` envelope). Failures include `error_code`. Rows and credentials are never logged. Redacted arg names become `[REDACTED]`. A sink error does not fail the tool.
+
+```yaml
+observability:
+  audit:
+    enabled: true
+    sink: file                 # stdout | file | http | otlp
+    path: /var/log/vectorsmith/audit.jsonl
+    redact:
+      arg_fields: [password, token, secret]
+```
+
+CLI: `--audit-log PATH`, `--audit-sink http --audit-url URL`. File sink is mode `0600`.
+
+### `observability.tracing` / `metrics`
+
+Both off by default (no spans, no counters). Extra: `vectorsmith[otel]`.
+
+```yaml
+observability:
+  tracing:
+    enabled: false
+    exporter: otlp
+    endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
+    service_name: vectorsmith
+  metrics:
+    enabled: false
+    port: 9090
+```
+
+When metrics are on, HTTP serve exposes `GET /metrics`.
+
+### `profiles`
+
+```yaml
+profiles:
+  enterprise:
+    security:
+      hardening:
+        disable_authoring: true
+        disable_meta_tools: true
+        require_tenancy: true
+        max_limit_max: 100
+        allowed_backends: [qdrant, pgvector]
+```
+
+Used by `vectorsmith validate --profile enterprise` (same rules as `--enterprise`). See [security hardening](security-hardening.md).
 
 ### `output`
 
@@ -341,6 +580,41 @@ Ops here are the LCD set (`eq` `ne` `gt` `gte` `lt` `lte` `in` `nin`). Values ar
 | `limit_default` | 10 | 1–500 |
 | `limit_max` | 50 | 1–500 |
 | `include_score` | `true` | Similarity score when the kind is a search |
+| `include_id` | `true` | Keep `_id` even when `fields` is set |
+| `max_field_length` | | Truncate string fields; `truncate_suffix` default `…` |
+| `redact` | | Per-path `omit` / `hash` / `mask` / `pattern` after fetch |
+
+```yaml
+output:
+  fields: [invoice_id, client_name, notes]
+  redact:
+    - { path: notes, mode: mask }
+    - { path: ssn, mode: omit }
+    - { path: email, mode: hash }
+    - path: body
+      mode: pattern
+      patterns:
+        - { regex: '\b\d{16}\b', replacement: '[PAN]' }
+  max_field_length: 400
+  truncate_suffix: "…"
+```
+
+Applied after projection, before the byte cap and audit. Modes: `omit` (drop field), `hash` (sha256 hex prefix), `mask` (keep last 4), `pattern` (regex replace).
+
+### `rerank`
+
+Off by default. When `enabled`, the adapter retrieves `retrieve_k` hits, then a hook reorders to `output.limit`. Failure keeps vector order and adds **VB4031**.
+
+```yaml
+rerank:
+  enabled: false
+  provider: http          # cohere | cross_encoder | http
+  model: rerank-english-v3.0
+  retrieve_k: 50
+  config:
+    api_key: ${COHERE_API_KEY:-}
+    base_url: ${RERANK_URL:-}
+```
 
 For `search` / `scroll` / `pipeline`, VectorSmith adds a `limit` argument (integer, default/max from `output`). Lookup / count / meta do not get that argument.
 
@@ -424,7 +698,7 @@ A compiled search tool looks like this (simplified):
 
 `tenant: acme` is **not** in the schema. The engine always ANDs it.
 
-Return envelope (in-process `call` / MCP tool result): `rows`, `count`, `truncated`, `may_be_incomplete`, `search_mode`, `warnings`, `latency_ms`.
+Return envelope (in-process `call` / MCP tool result): `rows`, `count`, `truncated`, `may_be_incomplete`, `search_mode`, `warnings`, `latency_ms`, optional `message` (e.g. directory-resolve alternatives).
 
 ---
 
@@ -469,28 +743,54 @@ Exit codes: `0` ok · `1` warnings with `--strict` (`validate` only) · `2` erro
 | Code | Severity | Typical cause |
 |---|---|---|
 | `VB0001` | warning | Unknown YAML key (typo or future field) |
-| `VB1003` | error | `${VAR}` outside `connections`, or inline secret |
+| `VB0002` | warning | `tds_version: "1"` — run `vectorsmith migrate` |
+| `VB1003` | error | `${VAR}` outside [allowed paths](#interpolation-paths), or inline secret |
 | `VB2001` | error | Operator illegal for that `dtype` |
 | `VB2002` | error | Duplicate parameter names |
 | `VB2004` | error | Backend cannot do that op or nested path |
+| `VB2005` | warning | `enum` used with an unusual operator |
 | `VB2006` | warning | Lookup `output.limit_default` is not 1 (schema still has no `limit` arg) |
 | `VB2010` | error | Name collides with a reserved / built-in name |
+| `VB2011` | error | Meta tool has query / params / filters |
 | `VB2012` / `VB2013` | error / warning | Hybrid unsupported or collection has no sparse config |
 | `VB2014` | error | User declared `kind: meta` |
+| `VB2015` | error | Dynamic collection `ParamRef` on a user tool (synthesis-only) |
 | `VB2016` | error | `search` / `query` on a pgvector table-mode connection |
 | `VB2017` | error | Live collection dim ≠ known embedder dim (`validate --live`) |
 | `VB2018` | warning | Embedding model id not in the dim registry (`validate --live`) |
+| `VB2019` | error | Embedding provider extra is not installed |
+| `VB2020` | error | `static_filters.must_not` uses an illegal operator |
+| `VB2021` | error | Bare-list `static_filters` mixed with `must`/`must_not` keys |
+| `VB2022` | error | `query.min_score` is not in `[0, 1]` |
+| `VB2023` | warning | `query.ef` set on a backend that cannot use it |
+| `VB4010` | error | Model argument conflicts with request tenancy (`enforce: strict`) |
+| `VB4011` | error | `security.tenancy.mode: claim` without `claim` |
+| `VB4012` | warning | Tool parameter path collides with `security.tenancy.path` |
+| `VB4013` | error | `security.rbac.enabled` is true but no roles are defined |
+| `VB4014` | warning | RBAC role `allow` list names an unknown tool |
+| `VB4020` | warning | Directory resolve failed; result includes alternatives |
+| `VB4021` | error | `resolve.kind: directory` on a backend that cannot scroll |
+| `VB4030` | warning | Query expand failed; original query was used |
+| `VB4031` | warning | Rerank failed; vector order was kept |
 | `VB2101` / `VB2102` | error | Pipeline missing `retrieve` or empty `expr` |
 | `VB3001`–`VB3005` | warning | Weak descriptions or overlapping built-in search |
+| `VB4001` | warning | Projected field missing on a row |
+| `VB4002` | warning | Pipeline `post_filter` compared a null |
+| `VB4003` | warning / error | Meta count failed, or connection unhealthy on `--live` |
 | `VB4004` | warning | YAML payload path not seen on live collection fields |
+| `VE001`–`VE007` | error/warning | `validate --enterprise` production preset |
+| `POL000` | error | `--policy` needs the `opa` CLI |
 
-JSON Schema for editors lives next to the models: `packages/core/vectorsmith_core/tds/schema_v1.json` (generated from the Pydantic types).
+JSON Schema for editors lives next to the models: `packages/core/vectorsmith_core/tds/schema_v1.json` and `schema_v2.json` (generated from the Pydantic types).
 
 ---
 
 ## Related
 
+- [Library surface](library.md) — extras, HTTP routes, exceptions
 - [Vector stores](vector-stores.md) — Qdrant, pgvector, Chroma, Pinecone, Weaviate, Milvus
+- [Embedding providers](embedding-providers.md)
+- [Enterprise](enterprise.md) · [Security hardening](security-hardening.md)
 - [Use in agents](use-in-agents.md) — `load_tools` vs `serve`
 - [Integrations](integrations/README.md) — Claude, Codex, LangGraph, …
 - [Coexistence](coexistence.md) — this file next to Slack / GitHub MCP

@@ -9,7 +9,7 @@ Two ways to use a `tools.yaml`. Pick the one your product supports.
 | A **Python agent** (LangChain, LangGraph, OpenAI Agents, Anthropic SDK) | `load_tools` / `connect` in-process | Store extra (`qdrant` / `pgvector` / … — [vector stores](../vector-stores.md)) plus `langchain` / `langgraph` / `openai-agents` / `anthropic` as listed below |
 | A **chat / IDE host** (Claude Desktop, Claude Code, Codex, Cursor) | `vectorsmith serve` as an MCP server | Store extra so `vectorsmith` is on `PATH` |
 
-Same YAML either way. Do not import `Engine`. Field-by-field: [tools.yaml](../tools-yaml-reference.md).
+Same YAML either way. Do not import `Engine`. Field-by-field: [tools.yaml](../tools-yaml-reference.md). Extras and public imports: [library surface](../library.md).
 
 ## MCP hosts
 

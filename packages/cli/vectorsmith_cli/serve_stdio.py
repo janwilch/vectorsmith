@@ -16,6 +16,8 @@ from mcp.server import NotificationOptions, Server
 from mcp.server.stdio import stdio_server
 
 from vectorsmith_cli.identity import DEFAULT_SERVER_NAME, PRODUCT_NAME
+from vectorsmith_cli.observe.logging import configure_logging
+from vectorsmith_cli.observe.sinks import build_audit_sink
 from vectorsmith_cli.serve_common import (
     dispatch,
     expire_old_drafts,
@@ -62,7 +64,13 @@ def serve_stdio(
     include_meta: bool = True,
     watch: bool = True,
     name: str = DEFAULT_SERVER_NAME,
+    audit_log: Path | None = None,
+    audit_sink: str | None = None,
+    audit_url: str | None = None,
+    log_format: str = "text",
+    log_level: str = "info",
 ) -> None:
+    configure_logging(log_format, log_level)
     _quiet_native_progress()
     env = _load_env(env_file)
     project = _assemble(tools, env)
@@ -80,12 +88,19 @@ def serve_stdio(
             embed: FastEmbedProvider | None = FastEmbedProvider()
         except Exception:
             embed = None
+        sink = build_audit_sink(
+            project.tds.observability.audit,
+            log_path=audit_log,
+            sink_name=audit_sink,
+            url=audit_url,
+        )
         state: dict[str, Any] = {
             "project": project,
             "engine": Engine(
                 project,
                 credential_resolver=EnvCredentialResolver(env),
                 embed_provider=embed,
+                audit_sink=sink,
             ),
             "connection": None,
         }
@@ -169,6 +184,7 @@ def serve_stdio(
                             fresh,
                             credential_resolver=EnvCredentialResolver(env),
                             embed_provider=embed,
+                            audit_sink=sink,
                         )
                         print(
                             f"reloaded tools.yaml — {len(fresh.tools)} tool(s)",

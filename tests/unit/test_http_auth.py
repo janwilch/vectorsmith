@@ -71,6 +71,15 @@ def test_initialize_server_info_user_name(tmp_path: Path) -> None:
     assert info["title"] == "VectorSmith"
 
 
+def test_drain_rejects_new_mcp(tmp_path: Path) -> None:
+    client = _app(tmp_path, auth="none")
+    client.app.state.draining = True
+    res = client.post("/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "initialize"})
+    assert res.status_code == 503
+    assert res.json()["error"] == "shutting_down"
+    assert client.get("/healthz").status_code == 200
+
+
 def test_write_secret_once_is_0600(tmp_path: Path) -> None:
     store = AuthStore(tmp_path / "auth.db")
     secret = store.rotate_secret()

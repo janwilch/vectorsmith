@@ -33,12 +33,13 @@ flowchart TB
 
 - The vector / table store (one of six backends — [vector stores](vector-stores.md))
 - The YAML contract (who may search what, with which filters)
-- Secrets in env files (`${QDRANT_URL}` under `connections` only)
+- Secrets in env files (`${VAR}` only on [allowed interpolation paths](tools-yaml-reference.md#interpolation-paths))
 
 ## What VectorSmith owns
 
 - Interpolation, dtype×op matrix, capability gates
 - Hidden `static_filters` (tenant isolation the model cannot omit)
+- Request-scoped `security.tenancy` (claim or header) ANDed on every call, including `run_tool`
 - Limits, field projection, optional pipelines (retrieve then Polars)
 - MCP advertisement (`tools/list`; by default also `list_available_tools` / `run_tool` — same validation path as named tools; `--no-meta-tools` to omit)
 - In-process wrappers for LangChain, LangGraph, OpenAI Agents, Anthropic
@@ -69,4 +70,4 @@ Cloud dashboard, hosted VectorSmith, and write tools on your store. Phase-1 OSS 
 
 ## Read next
 
-[tools.yaml](tools-yaml-reference.md) · [CLI](cli.md) · [Python API](python-api.md) · [Getting started](getting-started.md)
+[Library surface](library.md) · [tools.yaml](tools-yaml-reference.md) · [CLI](cli.md) · [Python API](python-api.md) · [Getting started](getting-started.md)

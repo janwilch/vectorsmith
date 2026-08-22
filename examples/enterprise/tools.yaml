@@ -1,0 +1,69 @@
+tds_version: "2"
+meta:
+  tool_catalog_version: "2026-08-22"
+
+connections:
+  main:
+    backend: qdrant
+    url: ${QDRANT_URL}
+
+defaults:
+  embedding: fastembed/BAAI/bge-small-en-v1.5
+
+security:
+  tenancy:
+    mode: claim
+    claim: tenant_id
+    path: tenant
+    enforce: strict
+  rbac:
+    enabled: true
+    default_role: viewer
+    role_claim: roles
+    roles:
+      viewer:
+        allow: [search_documents]
+      admin:
+        allow: ["*"]
+    deny_tools: [define_tool]
+  auth:
+    mode: jwt
+    jwt:
+      issuer: ${JWT_ISSUER}
+      audience: vectorsmith
+      jwks_url: ${JWKS_URL}
+
+observability:
+  audit:
+    enabled: true
+    sink: file
+    path: ${AUDIT_PATH:-/var/log/vectorsmith/audit.jsonl}
+
+authoring:
+  define_tool: false
+
+profiles:
+  enterprise:
+    security:
+      hardening:
+        disable_authoring: true
+        disable_meta_tools: true
+        require_tenancy: true
+        max_limit_max: 100
+
+tools:
+  - name: search_documents
+    description: >
+      Search tenant documents by meaning and optional status.
+      Use when the user asks for files, policies, or knowledge-base hits.
+    target: { connection: main, collection: documents }
+    query: { param: query, required: true }
+    static_filters:
+      must:
+        - { path: tenant, op: eq, value: acme }
+    parameters:
+      - { name: status, path: status, dtype: keyword, op: eq }
+    output:
+      fields: [title, status, snippet]
+      limit_default: 10
+      limit_max: 50

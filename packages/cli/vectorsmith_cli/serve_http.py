@@ -2,20 +2,36 @@
 
 from __future__ import annotations
 
+import signal
 import sys
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 from vectorsmith_cli.http.app import build_app
+from vectorsmith_cli.http.auth.resolve import build_auth_provider, merge_api_key_cfg, merge_jwt_cfg
 from vectorsmith_cli.http.builtin_oauth.store import AuthStore
 from vectorsmith_cli.identity import DEFAULT_SERVER_NAME
+from vectorsmith_cli.observe.logging import configure_logging
+from vectorsmith_cli.observe.sinks import build_audit_sink
+from vectorsmith_cli.serve_router import (
+    ProjectRouter,
+    configure_observability,
+    load_engines,
+    project_name,
+)
 from vectorsmith_cli.validate_cmd import _load_env
 from vectorsmith_core.api import EnvCredentialResolver, load_project
 from vectorsmith_core.embed.provider import FastEmbedProvider
 from vectorsmith_core.execute.engine import Engine
 
 
+def localhost_bind(bind: str) -> bool:
+    return bind.startswith("127.0.0.1") or bind.startswith("localhost")
+
+
 def serve_http(
-    tools: Path,
+    tools: Path | Sequence[Path],
     *,
     bind: str,
     auth: str,
@@ -23,9 +39,24 @@ def serve_http(
     env_file: Path | None,
     enable_define: bool = False,
     include_meta: bool = True,
+    live_embed: bool = False,
     name: str = DEFAULT_SERVER_NAME,
+    jwt_issuer: str | None = None,
+    jwt_audience: str | None = None,
+    jwks_url: str | None = None,
+    api_keys_file: Path | None = None,
+    auth_store: str = "sqlite",
+    redis_url: str | None = None,
+    audit_log: Path | None = None,
+    audit_sink: str | None = None,
+    audit_url: str | None = None,
+    route_by_claim: str | None = None,
+    default_project: str | None = None,
+    shutdown_grace_s: int = 30,
+    log_format: str = "text",
+    log_level: str = "info",
 ) -> None:
-    if auth == "none" and not bind.startswith("127.0.0.1") and not bind.startswith("localhost"):
+    if auth == "none" and not localhost_bind(bind):
         print("--auth none is only allowed on localhost", file=sys.stderr)
         raise SystemExit(3)
     if auth == "builtin" and (not public_url or not public_url.startswith("https://")):
@@ -35,24 +66,84 @@ def serve_http(
     host, _, port_s = bind.rpartition(":")
     host = host or "127.0.0.1"
     port = int(port_s or "8000")
+    configure_logging(log_format, log_level)
     env = _load_env(env_file)
-    project = load_project(tools, env=env)
-    errors = [i for i in project.issues if i.severity == "error"]
-    if errors:
-        for i in errors:
-            print(f"{i.code}: {i.message}", file=sys.stderr)
-        raise SystemExit(2)
+    paths = [tools] if isinstance(tools, Path) else list(tools)
     try:
         embed: FastEmbedProvider | None = FastEmbedProvider()
     except Exception:
         embed = None
-    engine = Engine(project, credential_resolver=EnvCredentialResolver(env), embed_provider=embed)
-    store = AuthStore()
+    if len(paths) == 1:
+        project = load_project(paths[0], env=env)
+        errors = [i for i in project.issues if i.severity == "error"]
+        if errors:
+            for i in errors:
+                print(f"{i.code}: {i.message}", file=sys.stderr)
+            raise SystemExit(2)
+        engine = Engine(
+            project,
+            credential_resolver=EnvCredentialResolver(env),
+            embed_provider=embed,
+            audit_sink=build_audit_sink(
+                project.tds.observability.audit,
+                log_path=audit_log,
+                sink_name=audit_sink,
+                url=audit_url,
+            ),
+        )
+        router = None
+    else:
+        default = default_project or project_name(paths[0])
+        engines = load_engines(
+            paths,
+            env=env,
+            embed_provider=embed,
+            audit_sink=build_audit_sink(
+                load_project(paths[0], env=env).tds.observability.audit,
+                log_path=audit_log,
+                sink_name=audit_sink,
+                url=audit_url,
+            ),
+        )
+        router = ProjectRouter(engines, route_claim=route_by_claim, default=default)
+        engine = engines[default]
+    configure_observability(engine)
+    yaml_auth = project.tds.security.auth
+    jwt_cfg = merge_jwt_cfg(
+        yaml_auth.jwt, issuer=jwt_issuer, audience=jwt_audience, jwks_url=jwks_url
+    )
+    api_cfg = merge_api_key_cfg(yaml_auth.api_key, keys_file=api_keys_file)
+    if auth == "jwt" and not jwt_cfg.jwks_url:
+        print("jwt auth requires --jwks-url or security.auth.jwt.jwks_url", file=sys.stderr)
+        raise SystemExit(2)
+    if auth == "api_key" and not api_cfg.keys_file:
+        print(
+            "api_key auth requires --api-keys-file or security.auth.api_key.keys_file",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
+    store: Any
+    if auth_store == "redis" and not redis_url:
+        print("--auth-store redis requires --redis-url", file=sys.stderr)
+        raise SystemExit(2)
+    if auth_store == "redis":
+        from vectorsmith_cli.http.auth.store.redis import RedisAuthStore
+
+        store = RedisAuthStore(redis_url)
+    else:
+        store = AuthStore()
     if auth == "builtin":
         secret = store.bootstrap_secret()
         if secret:
             dest = store.write_secret_once(secret)
             print(f"Access secret written to {dest} (mode 0600; shown once)", file=sys.stderr)
+    provider = build_auth_provider(
+        auth,
+        store=store,
+        auth_cfg=yaml_auth,
+        jwt_cfg=jwt_cfg,
+        api_key_cfg=api_cfg,
+    )
     app = build_app(
         engine=engine,
         enable_define=enable_define,
@@ -62,7 +153,22 @@ def serve_http(
         store=store,
         drafts_path=Path("tools.drafts.yaml"),
         name=name,
+        live_embed=live_embed,
+        auth_provider=provider,
+        router=router,
+        metrics_enabled=engine.project.tds.observability.metrics.enabled,
     )
+
+    def _begin_drain(*_args: object) -> None:
+        app.state.draining = True
+
+    signal.signal(signal.SIGTERM, _begin_drain)
     import uvicorn
 
-    uvicorn.run(app, host=host, port=port, log_level="info")
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        log_level=log_level,
+        timeout_graceful_shutdown=shutdown_grace_s,
+    )

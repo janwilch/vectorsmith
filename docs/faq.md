@@ -32,7 +32,7 @@ Use `--no-meta-tools` if you do not want those two dispatchers; then a reconnect
 
 ### Is `run_tool` a way around enums and tenant filters?
 
-No. `run_tool` exists because Claude Desktop freezes `tools/list`. It is MCP-only (`load_tools` / `connect` never advertise it). Calling it runs the **same** `engine.call` path as a named tool: jsonschema on that tool’s compiled `inputSchema` (types, enums, limits), then hidden `static_filters` AND-merged into the store filter. The envelope field `arguments` allows extra keys at the MCP layer; they are still validated against the inner schema. Disable with `--no-meta-tools`.
+No. `run_tool` exists because Claude Desktop freezes `tools/list`. It is MCP-only (`load_tools` / `connect` never advertise it). Calling it runs the **same** `engine.call` path as a named tool: jsonschema on that tool’s compiled `inputSchema` (types, enums, limits), then hidden `static_filters` and request tenancy AND-merged into the store filter. The envelope field `arguments` allows extra keys at the MCP layer; they are still validated against the inner schema. Disable with `--no-meta-tools`.
 
 ### `serve --http` exits 2 or 3
 
@@ -41,7 +41,7 @@ No. `run_tool` exists because Claude Desktop freezes `tools/list`. It is MCP-onl
 | `3` | `--auth none` on a non-loopback bind (`0.0.0.0`, a hostname) |
 | `2` | `--auth builtin` (the default) without `https://` `--public-url` |
 
-Local: `--http 127.0.0.1:8080 --auth none`. Public: `--auth builtin --public-url https://…`.
+Local: `--http 127.0.0.1:8080 --auth none`. Public: `--auth builtin --public-url https://…`, or `--auth jwt` / `--auth api_key`.
 
 ---
 
@@ -55,9 +55,19 @@ No. Vendor servers are cluster admin (often including writes). VectorSmith is **
 
 `static_filters` are applied on every call and are not advertised. Put org isolation there so the model cannot skip it. That is a payload field, not Pinecone namespace or Weaviate `connections.*.tenant` — [vector stores](vector-stores.md#tenancy-vs-payload-filters).
 
+For **request-scoped** isolation (each caller is a different tenant), set `security.tenancy.mode` to `claim` or `header`. The engine ANDs that filter from the JWT claim or `X-Tenant-Id` header. That path is never in the MCP schema. Stdio / `load_tools` have no caller identity — keep `mode: none` or `static` there.
+
 ### Which embedding model actually runs?
 
-`query.embedding` on the tool if set, otherwise `defaults.embedding` (TDS default `fastembed/BAAI/bge-small-en-v1.5`). The collection vector size must match. `validate --live` errors **VB2017** on a known-model dim mismatch and warns **VB2018** if the model id is not in the registry.
+`query.embedding` on the tool if set, otherwise `defaults.embedding` (string or `{provider, model, dims}`). Default is FastEmbed `fastembed/BAAI/bge-small-en-v1.5`. OpenAI / Azure / Cohere / HTTP need the matching extra and usually an explicit `dims`. `validate --live` errors **VB2017** on dim mismatch, warns **VB2018** if the model is unknown without `dims`, and errors **VB2019** if the provider extra is missing.
+
+### How do I point YAML at a hosted Qdrant (TrueFoundry, Cloud, …)?
+
+Use the **REST API base**, not the `/dashboard` UI URL. Put it in `.env` as `QDRANT_URL` (plus `QDRANT_API_KEY` if the cluster requires it). Match embedding `dims` to the collection. See [vector stores → hosted Qdrant](vector-stores.md#hosted-qdrant-or-any-remote-cluster).
+
+### `VB0002` on every old file
+
+`tds_version: "1"` still loads. `vectorsmith migrate tools.yaml --from 1 --to 2 --dry-run` shows the rewrite. `--strict` treats the deprecation as failure.
 
 ### Hybrid search fails (`VB2012` / `VB2013`)
 
@@ -100,6 +110,10 @@ The process **cwd**. Set `cwd` in Desktop/Codex. Cap 10 pending; 30-day expiry.
 `approve` interpolates with an empty env map. Use `${VAR:-default}` in the YAML you approve into.
 
 ---
+
+### Which pip extras exist?
+
+Stores, agent SDKs, `embed-openai` / `embed-cohere`, `auth-jwt` / `auth-redis`, `otel`. Inventory: [library surface](library.md).
 
 ## Still stuck
 

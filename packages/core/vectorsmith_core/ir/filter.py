@@ -103,6 +103,23 @@ def ir_paths(node: IRNode | None) -> set[str]:
     return out
 
 
+_INVERT_OP = {
+    "eq": "ne",
+    "ne": "eq",
+    "gt": "lte",
+    "gte": "lt",
+    "lt": "gte",
+    "lte": "gt",
+    "in": "nin",
+    "nin": "in",
+}
+
+
+def invert_cond(cond: Cond) -> Cond:
+    """Logical NOT of an LCD condition (used for ``static_filters.must_not``)."""
+    return Cond(cond.path, _INVERT_OP.get(cond.op, cond.op), cond.value)
+
+
 def merge_and(*nodes: IRNode | None) -> IRNode | None:
     """AND-merge nodes, flattening nested Ands."""
     flat: list[IRNode] = []

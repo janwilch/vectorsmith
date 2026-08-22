@@ -9,6 +9,7 @@ from typing import Any, Literal
 
 from vectorsmith_core.adapters.capabilities import CAPS_BY_BACKEND
 from vectorsmith_core.tds.models import (
+    EmbeddingConfig,
     PgvectorConn,
     QuerySpec,
     RetrieveStep,
@@ -76,6 +77,14 @@ def _enabled_builtin_names(tds: TDSFile) -> set[str]:
 def validate(tds: TDSFile, *, live_sparse: dict[str, bool] | None = None) -> list[Any]:
     """Return all issues. ``live_sparse`` maps ``connection.collection`` → has_sparse."""
     issues: list[Any] = []
+    if tds.tds_version == "1":
+        issues.append(
+            _issue(
+                "VB0002",
+                "tds_version 1 is deprecated; run `vectorsmith migrate --from 1 --to 2 --dry-run`",
+                severity="warning",
+            )
+        )
     reserved = RESERVED | _enabled_builtin_names(tds)
     seen_params: dict[str, set[str]] = {}
 
@@ -87,6 +96,99 @@ def validate(tds: TDSFile, *, live_sparse: dict[str, bool] | None = None) -> lis
         seen_params[tool.name] = set(names)
 
     issues.extend(_builtin_lints(tds))
+    issues.extend(_embed_provider_issues(tds))
+    issues.extend(_tenancy_issues(tds))
+    issues.extend(_rbac_issues(tds))
+    return issues
+
+
+def _tenancy_issues(tds: TDSFile) -> list[Any]:
+    tenancy = tds.security.tenancy
+    issues: list[Any] = []
+    if tenancy.mode == "claim" and not tenancy.claim:
+        issues.append(
+            _issue(
+                "VB4011",
+                "security.tenancy.mode is claim but claim is not set",
+            )
+        )
+    if tenancy.mode in {"claim", "header"}:
+        for tool in tds.tools:
+            for param in tool.parameters:
+                if param.path == tenancy.path or param.name == tenancy.path:
+                    issues.append(
+                        _issue(
+                            "VB4012",
+                            f"parameter '{param.name}' collides with tenancy path "
+                            f"'{tenancy.path}'",
+                            severity="warning",
+                            tool=tool.name,
+                            path=param.path or param.name,
+                        )
+                    )
+    return issues
+
+
+def _rbac_issues(tds: TDSFile) -> list[Any]:
+    rbac = tds.security.rbac
+    issues: list[Any] = []
+    if not rbac.enabled:
+        return issues
+    if not rbac.roles:
+        issues.append(_issue("VB4013", "security.rbac.enabled is true but no roles are defined"))
+        return issues
+    known = {t.name for t in tds.tools} | RESERVED | _enabled_builtin_names(tds)
+    for role, spec in rbac.roles.items():
+        for name in spec.allow:
+            if name == "*":
+                continue
+            if name not in known:
+                issues.append(
+                    _issue(
+                        "VB4014",
+                        f"role '{role}' allows unknown tool '{name}'",
+                        severity="warning",
+                        tool=name,
+                    )
+                )
+    return issues
+
+
+def _tool_embed_spec(tds: TDSFile, tool: ToolSpec) -> EmbeddingConfig:
+    if tool.query is not None and tool.query.embedding is not None:
+        return tool.query.embedding
+    if tool.steps:
+        first = tool.steps[0]
+        if isinstance(first, RetrieveStep) and first.retrieve.query is not None:
+            if first.retrieve.query.embedding is not None:
+                return first.retrieve.query.embedding
+    return tds.defaults.embedding
+
+
+def _embed_provider_issues(tds: TDSFile) -> list[Any]:
+    from vectorsmith_core.embed.registry import provider_available
+
+    issues: list[Any] = []
+    seen: set[str] = set()
+    specs = [tds.defaults.embedding]
+    for tool in tds.tools:
+        specs.append(_tool_embed_spec(tds, tool))
+    for spec in specs:
+        if spec.provider in seen:
+            continue
+        seen.add(spec.provider)
+        if spec.provider in {"openai", "azure_openai", "cohere"} and not provider_available(
+            spec.provider
+        ):
+            extra = "embed-openai" if spec.provider != "cohere" else "embed-cohere"
+            issues.append(
+                _issue(
+                    "VB2019",
+                    f"embedding provider '{spec.provider}' is not installed "
+                    f"(pip install 'vectorsmith[{extra}]')",
+                    path="defaults.embedding.provider",
+                )
+            )
     return issues
 
 
@@ -114,6 +216,26 @@ def _validate_tool(
         issues.append(
             _issue("VB2011", "meta tools cannot have query/params/filters", tool=tool.name)
         )
+    lcd = frozenset({"eq", "ne", "gt", "gte", "lt", "lte", "in", "nin"})
+    extras = getattr(tool.static_filters, "model_extra", None) or {}
+    if extras:
+        issues.append(
+            _issue(
+                "VB2021",
+                "static_filters cannot mix a bare list with must/must_not keys",
+                tool=tool.name,
+            )
+        )
+    for sf in tool.static_filters.must_not:
+        if sf.op not in lcd:
+            issues.append(
+                _issue(
+                    "VB2020",
+                    f"must_not op '{sf.op}' is not in the allowed set",
+                    tool=tool.name,
+                    path=sf.path,
+                )
+            )
 
     conn = _conn_for(tds, tool)
     caps = CAPS_BY_BACKEND.get(getattr(conn, "backend", ""), None)
@@ -157,6 +279,16 @@ def _validate_tool(
                     path=p.path,
                 )
             )
+        if p.resolve is not None and p.resolve.kind == "directory":
+            if caps is None or not caps.scroll:
+                issues.append(
+                    _issue(
+                        "VB4021",
+                        "resolve.kind directory requires a backend that can scroll",
+                        tool=tool.name,
+                        path=p.path,
+                    )
+                )
         if p.enum and p.op not in {None, "eq", "ne", "in", "nin"}:
             issues.append(
                 _issue(
@@ -181,6 +313,32 @@ def _validate_tool(
         if isinstance(step, RetrieveStep) and step.retrieve.query:
             queries.append(step.retrieve.query)
     for q in queries:
+        if q.min_score is not None and not 0.0 <= q.min_score <= 1.0:
+            issues.append(
+                _issue(
+                    "VB2022",
+                    "min_score must be between 0.0 and 1.0",
+                    tool=tool.name,
+                )
+            )
+        elif q.min_score is not None and caps is not None and not caps.score_threshold:
+            issues.append(
+                _issue(
+                    "VB2004",
+                    "backend ignores min_score (results are still filtered after fetch)",
+                    severity="warning",
+                    tool=tool.name,
+                )
+            )
+        if q.ef is not None and (caps is None or not caps.hnsw_ef):
+            issues.append(
+                _issue(
+                    "VB2023",
+                    "ef is not supported on this backend and will be ignored",
+                    severity="warning",
+                    tool=tool.name,
+                )
+            )
         if q.mode == "hybrid":
             if caps is None or not caps.hybrid:
                 issues.append(
@@ -291,13 +449,17 @@ def _builtin_lints(tds: TDSFile) -> list[Any]:
 _SKIP_PATHS = frozenset({"id", "_id", "_score"})
 
 
-def embedding_dim(model: str) -> int | None:
-    """Known FastEmbed model size, or None if the id is not in the registry."""
-    from vectorsmith_core.embed.models import DIMS
+def embedding_dim(model: str, *, dims: int | None = None) -> int | None:
+    """Known model size, explicit ``dims``, or None if unknown."""
+    from vectorsmith_core.embed.models import resolve_dims
+    from vectorsmith_core.errors import EmbeddingError
 
-    if model in DIMS:
-        return DIMS[model]
-    return DIMS.get(model.split("/", 1)[-1])
+    if dims is not None:
+        return dims
+    try:
+        return resolve_dims(model)
+    except EmbeddingError:
+        return None
 
 
 def live_contract_issues(
@@ -314,7 +476,8 @@ def live_contract_issues(
     from vectorsmith_core.ir.filter import ir_paths
 
     issues: list[Any] = []
-    default_model = tds.defaults.embedding
+    default_spec = tds.defaults.embedding
+    default_model = default_spec.identity
     for name, plan in plans.items():
         if not isinstance(plan, ExecutionPlan):
             continue
@@ -325,9 +488,10 @@ def live_contract_issues(
         info = native.get(key)
         if not info:
             continue
-        model = plan.embedding or default_model
+        spec = plan.embed_spec or default_spec
+        model = plan.embedding or spec.identity or default_model
         if plan.kind in {"search", "pipeline"}:
-            dim = embedding_dim(model)
+            dim = embedding_dim(str(model), dims=spec.dims)
             live_dim = info.get("dim")
             if dim is None:
                 issues.append(
@@ -353,6 +517,8 @@ def live_contract_issues(
         field_set = {str(f) for f in fields}
         wanted: set[str] = set()
         for cond in plan.static_conds:
+            wanted |= ir_paths(cond)
+        for cond in getattr(plan, "static_must_not", None) or []:
             wanted |= ir_paths(cond)
         for cond in plan.param_conds:
             wanted |= ir_paths(cond)

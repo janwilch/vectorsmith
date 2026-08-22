@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import ValidationError
 
 from vectorsmith_core.compilepkg.validator import validate
-from vectorsmith_core.tds.models import StaticFilter, ToolSpec
+from vectorsmith_core.tds.models import StaticFilter, StaticFilters, ToolSpec
 
 if TYPE_CHECKING:
     from vectorsmith_core.api import Project, ToolDraft
@@ -67,15 +67,21 @@ def draft_tool(project: Project, provenance: dict[str, Any], proposed: dict[str,
     tds = getattr(project, "tds", None)
     if tds is not None and spec.target and spec.target.connection in tds.connections:
         conn = tds.connections[spec.target.connection]
-        attached = list(conn.builtin_defaults.static_filters)
+        attached = list(conn.builtin_defaults.static_filters.must)
         if attached:
-            have = {(s.path, s.op, s.value) for s in spec.static_filters}
-            merged = list(spec.static_filters)
+            have = {(s.path, s.op, s.value) for s in spec.static_filters.must}
+            merged = list(spec.static_filters.must)
             for sf in attached:
                 key = (sf.path, sf.op, sf.value)
                 if key not in have:
                     merged.append(StaticFilter(path=sf.path, op=sf.op, value=sf.value))
-            spec = spec.model_copy(update={"static_filters": merged})
+            spec = spec.model_copy(
+                update={
+                    "static_filters": StaticFilters(
+                        must=merged, must_not=list(spec.static_filters.must_not)
+                    )
+                }
+            )
 
     if tds is not None:
         trial = tds.model_copy(update={"tools": list(tds.tools) + [spec]})

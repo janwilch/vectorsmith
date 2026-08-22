@@ -271,6 +271,7 @@ Tickets are a second file / second MCP name: `tools.tickets.yaml` → `--name ti
 | `introspect` | Collection / field metadata to `--out` (default `schema.json`). Requires `--connection`. |
 | `drafts` / `approve` | `drafts list\|reject NAME`. `approve NAME [--file tools.yaml]` promotes into that file. Drafts live in `./tools.drafts.yaml` (process cwd). |
 | `auth` | `rotate-secret` \| `revoke` for builtin HTTP OAuth |
+| `migrate` | `tds_version` 1 → 2 (`--dry-run` / `--write`) |
 
 `validate` exits `0` / `1` (`--strict` warnings) / `2` (errors). `test` and `introspect` use `3` on a live failure. `serve --http --auth none` off localhost exits `3`.
 
@@ -287,7 +288,10 @@ Tickets are a second file / second MCP name: `tools.tickets.yaml` → `--name ti
 | Understand every `tools.yaml` field | [YAML reference](docs/tools-yaml-reference.md) |
 | Plug into Claude, Codex, Cursor, LangChain, … | [Integrations](docs/integrations/README.md) |
 | Look up a CLI flag | [CLI](docs/cli.md) |
+| See every extra, route, and exception | [Library surface](docs/library.md) |
 | Call tools from Python | [Python API](docs/python-api.md) |
+| JWT / tenancy / RBAC / audit | [Enterprise](docs/enterprise.md) |
+| Helm / probes | [Kubernetes](docs/deploy/kubernetes.md) |
 | Fix Desktop disconnect / env / HTTP auth | [FAQ](docs/faq.md) |
 | Copy a host config | [examples/mcp_hosts](examples/mcp_hosts/) |
 | See agent apps | [examples/](examples/README.md) |

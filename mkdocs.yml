@@ -106,8 +106,14 @@ nav:
   - HTTP / claude.ai: quickstart-selfhost.md
   - Coexistence: coexistence.md
   - tools.yaml: tools-yaml-reference.md
+  - Library surface: library.md
   - CLI: cli.md
   - Python API: python-api.md
+  - Enterprise: enterprise.md
+  - Security hardening: security-hardening.md
+  - Embedding providers: embedding-providers.md
+  - Observability: observability.md
+  - Kubernetes: deploy/kubernetes.md
   - Architecture: architecture.md
   - FAQ: faq.md
   - Repository map: repository.md

@@ -81,4 +81,23 @@ These extras are **agent SDKs**, not databases:
 | `openai-agents` | `BoundTools.as_openai_agents()` |
 | `anthropic` | `BoundTools.as_anthropic()` |
 
-`connect()` only needs the store extra. Details: [Python API](python-api.md#extras).
+Embed / auth / telemetry extras (`embed-openai`, `embed-cohere`, `auth-jwt`, `auth-redis`, `otel`) are listed on [library surface](library.md). `connect()` only needs the store extra unless you use those features.
+
+## Hosted Qdrant (or any remote cluster)
+
+The dashboard URL (`…/dashboard`) is **not** the API. Put the REST base (no `/dashboard`) in `.env`:
+
+```bash
+QDRANT_URL=https://your-cluster.example.com
+QDRANT_API_KEY=…
+```
+
+```yaml
+connections:
+  main:
+    backend: qdrant
+    url: ${QDRANT_URL}
+    api_key: ${QDRANT_API_KEY:-}
+```
+
+Then `vectorsmith validate tools.yaml --live --env-file .env`. Match `defaults.embedding` to the model and **dims** used when the collection was indexed. Do not commit the live URL or key.

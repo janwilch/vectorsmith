@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -11,6 +13,12 @@ import yaml
 
 from vectorsmith_core.api import CallContext, Project, draft_tool
 from vectorsmith_core.execute.engine import Engine
+from vectorsmith_core.observe.audit import build_audit_event
+from vectorsmith_core.security.rbac import check_rbac
+
+_AUDIT_LOG = logging.getLogger("vectorsmith.audit")
+_CALL_LOG = logging.getLogger("vectorsmith.call")
+_META_AUDIT = frozenset({"list_available_tools", "run_tool"})
 
 DEFINE_DESC = (
     "Propose a new read-only tool from describe_collection fields only. "
@@ -31,7 +39,8 @@ LIVE_RUN_DESC = (
     "list_available_tools. Use this for tools added to tools.yaml after Claude "
     "connected; Desktop will not show those names in the connector list. "
     "Arguments are re-validated against that tool's compiled inputSchema "
-    "(types, enums, limits); hidden static_filters still apply. Not a bypass."
+    "(types, enums, limits); hidden static_filters and request tenancy still apply. "
+    "Not a bypass."
 )
 SERVER_INSTRUCTIONS = (
     "VectorSmith reloads tools.yaml while you stay connected. Claude Desktop "
@@ -137,6 +146,45 @@ async def dispatch(
     drafts_path: Path,
     include_meta: bool = True,
 ) -> dict[str, Any]:
+    started = time.perf_counter()
+    try:
+        result = await _dispatch_inner(
+            engine,
+            name,
+            args,
+            ctx=ctx,
+            enable_define=enable_define,
+            drafts_path=drafts_path,
+            include_meta=include_meta,
+        )
+    except Exception as exc:
+        await _emit_audit(engine, ctx, name, args, started, error=exc)
+        raise
+    await _emit_audit(engine, ctx, name, args, started, result=result)
+    _CALL_LOG.info(
+        "tool call completed",
+        extra={
+            "request_id": ctx.request_id,
+            "principal": ctx.principal,
+            "tool": name,
+            "latency_ms": int((time.perf_counter() - started) * 1000),
+        },
+    )
+    return result
+
+
+async def _dispatch_inner(
+    engine: Engine,
+    name: str,
+    args: dict[str, Any],
+    *,
+    ctx: CallContext,
+    enable_define: bool,
+    drafts_path: Path,
+    include_meta: bool = True,
+) -> dict[str, Any]:
+    rbac = engine.project.tds.security.rbac
+    check_rbac(ctx, name, rbac, allow_meta=include_meta)
     if include_meta and name == "list_available_tools":
         return _list_available(
             engine.project, enable_define=enable_define, include_meta=include_meta
@@ -161,6 +209,41 @@ async def dispatch(
         return _define_tool(engine.project, args, drafts_path)
     result = await engine.call(name, args, ctx=ctx)
     return result.model_dump()
+
+
+async def _emit_audit(
+    engine: Engine,
+    ctx: CallContext,
+    name: str,
+    args: dict[str, Any],
+    started: float,
+    *,
+    result: dict[str, Any] | None = None,
+    error: BaseException | None = None,
+) -> None:
+    sink = getattr(engine, "audit_sink", None)
+    cfg = engine.project.tds.observability.audit
+    if sink is None:
+        return
+    if name in _META_AUDIT or name in cfg.exclude_tools:
+        return
+    compiled = engine.project.tools.get(name)
+    plan = compiled.plan if compiled is not None else None
+    event = build_audit_event(
+        cfg=cfg,
+        ctx=ctx,
+        tool=name,
+        args=args,
+        connection=getattr(plan, "connection", None),
+        collection=getattr(plan, "collection", None),
+        latency_ms=int((time.perf_counter() - started) * 1000),
+        result=result,
+        error=error,
+    )
+    try:
+        await sink.emit(event)
+    except Exception:
+        _AUDIT_LOG.warning("audit emit failed", exc_info=True)
 
 
 def _list_available(
@@ -212,6 +295,7 @@ async def _run_named(
             "count": 0,
             "message": "run_tool arguments must be an object (or JSON object string).",
         }
+    check_rbac(ctx, inner, engine.project.tds.security.rbac)
     return await dispatch(
         engine,
         inner,

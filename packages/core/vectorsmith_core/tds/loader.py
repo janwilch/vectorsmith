@@ -61,11 +61,33 @@ def _assert_depth(obj: object, depth: int) -> None:
             _assert_depth(v, depth + 1)
 
 
+def _interp_allowed(path: str) -> bool:
+    if path == "connections" or path.startswith("connections."):
+        return True
+    if path == "defaults.embedding.config" or path.startswith("defaults.embedding.config."):
+        return True
+    if ".query.embedding.config" in path:
+        return True
+    if ".query.expand.config" in path:
+        return True
+    if ".rerank.config" in path:
+        return True
+    if path == "observability.tracing.endpoint":
+        return True
+    if path == "security.auth" or path.startswith("security.auth."):
+        return True
+    if path == "security.rate_limit.redis_url":
+        return True
+    if path.startswith("observability.audit.") and path.endswith((".url", ".path")):
+        return True
+    return False
+
+
 def interpolate_connections(
     data: dict[str, Any],
     env: Mapping[str, str] | None,
 ) -> tuple[dict[str, Any], list[str], list[str]]:
-    """Replace ``${VAR}`` / ``${VAR:-default}`` only under ``connections``.
+    """Replace ``${VAR}`` under ``connections`` and embedding ``config`` blocks.
 
     Returns ``(data, missing_env_names, vb1003_paths)``.
     """
@@ -85,14 +107,15 @@ def interpolate_connections(
 
         return _ENV_RE.sub(repl, value)
 
-    def walk(obj: Any, *, allow: bool, path: str) -> Any:
+    def walk(obj: Any, path: str) -> Any:
+        allow = _interp_allowed(path)
         if isinstance(obj, dict):
             return {
-                k: walk(v, allow=allow, path=f"{path}.{k}" if path else k)
+                k: walk(v, f"{path}.{k}" if path else k)
                 for k, v in obj.items()
             }
         if isinstance(obj, list):
-            return [walk(v, allow=allow, path=f"{path}[{i}]") for i, v in enumerate(obj)]
+            return [walk(v, f"{path}[{i}]") for i, v in enumerate(obj)]
         if isinstance(obj, str):
             if _ENV_RE.search(obj) and not allow:
                 vb1003.append(path)
@@ -100,14 +123,9 @@ def interpolate_connections(
             return _sub(obj) if allow else obj
         return obj
 
-    out = dict(data)
-    connections = data.get("connections")
-    if isinstance(connections, dict):
-        out["connections"] = walk(connections, allow=True, path="connections")
-    for key, val in data.items():
-        if key == "connections":
-            continue
-        out[key] = walk(val, allow=False, path=key)
+    out = walk(data, "")
+    if not isinstance(out, dict):
+        return data, missing, vb1003
     return out, missing, vb1003
 
 
@@ -178,6 +196,50 @@ def lint_secrets(connections: Mapping[str, Any]) -> list[str]:
     return hits
 
 
+def lint_embedding_secrets(data: Mapping[str, Any]) -> list[str]:
+    hits: list[str] = []
+
+    def walk(obj: Any, path: str) -> None:
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                walk(v, f"{path}.{k}")
+        elif isinstance(obj, list):
+            for i, v in enumerate(obj):
+                walk(v, f"{path}[{i}]")
+        elif isinstance(obj, str) and looks_like_secret(obj):
+            hits.append(path)
+
+    defaults = data.get("defaults")
+    if isinstance(defaults, dict):
+        emb = defaults.get("embedding")
+        if isinstance(emb, dict):
+            walk(emb.get("config") or {}, "defaults.embedding.config")
+    tools = data.get("tools")
+    if isinstance(tools, list):
+        for i, tool in enumerate(tools):
+            if not isinstance(tool, dict):
+                continue
+            query = tool.get("query")
+            if isinstance(query, dict) and isinstance(query.get("embedding"), dict):
+                walk(
+                    query["embedding"].get("config") or {},
+                    f"tools[{i}].query.embedding.config",
+                )
+            for j, step in enumerate(tool.get("steps") or []):
+                if not isinstance(step, dict):
+                    continue
+                retrieve = step.get("retrieve")
+                if not isinstance(retrieve, dict):
+                    continue
+                rq = retrieve.get("query")
+                if isinstance(rq, dict) and isinstance(rq.get("embedding"), dict):
+                    walk(
+                        rq["embedding"].get("config") or {},
+                        f"tools[{i}].steps[{j}].retrieve.query.embedding.config",
+                    )
+    return hits
+
+
 def read_source(source: str | Path | dict[str, Any]) -> dict[str, Any]:
     if isinstance(source, dict):
         return source
@@ -204,6 +266,7 @@ def parse_tds(
     """
     data = read_source(source)
     secret_hits = lint_secrets(data.get("connections") or {})
+    secret_hits.extend(lint_embedding_secrets(data))
     vb1003: list[str] = []
     if interpolate:
         data, missing, vb1003 = interpolate_connections(data, env)

@@ -64,8 +64,10 @@ class BackendUnreachable(VectorSmithError):
 
 
 class InvalidArgumentsError(VectorSmithError):
-    def __init__(self, *, detail: str = "invalid arguments") -> None:
-        super().__init__("invalid_arguments", retryable=False, detail=detail)
+    def __init__(
+        self, *, detail: str = "invalid arguments", code: str = "invalid_arguments"
+    ) -> None:
+        super().__init__(code, retryable=False, detail=detail)
 
 
 class SchemaDriftError(VectorSmithError):
@@ -74,7 +76,10 @@ class SchemaDriftError(VectorSmithError):
 
 
 class RateLimited(VectorSmithError):
-    def __init__(self, *, detail: str = "rate limited") -> None:
+    def __init__(
+        self, *, detail: str = "rate limited", retry_after_s: int = 60
+    ) -> None:
+        self.retry_after_s = retry_after_s
         super().__init__("rate_limited", retryable=True, detail=detail)
 
 

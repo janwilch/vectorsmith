@@ -1,0 +1,15 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "vectorsmith.fullname" . }}
+  labels:
+    {{- include "vectorsmith.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "vectorsmith.selectorLabels" . | nindent 4 }}
+  endpoints:
+    - port: http
+      path: /metrics
+{{- end }}

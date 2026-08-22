@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vectorsmith.fullname" . }}
+  labels:
+    {{- include "vectorsmith.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "vectorsmith.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        {{- include "vectorsmith.selectorLabels" . | nindent 8 }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.shutdownGraceSeconds }}
+      containers:
+        - name: vectorsmith
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+          command: ["vectorsmith"]
+          args:
+            - serve
+            - /config/tools.yaml
+            - --http
+            - 0.0.0.0:{{ .Values.service.targetPort }}
+            - --auth
+            - {{ .Values.auth.mode | quote }}
+            {{- if .Values.auth.jwksUrl }}
+            - --jwks-url
+            - {{ .Values.auth.jwksUrl | quote }}
+            {{- end }}
+            {{- if eq .Values.auth.store "redis" }}
+            - --auth-store
+            - redis
+            - --redis-url
+            - {{ .Values.redis.url | quote }}
+            {{- end }}
+            - --shutdown-grace-s
+            - {{ .Values.shutdownGraceSeconds | quote }}
+            - --log-format
+            - json
+            - --no-meta-tools
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envFileSecret }}
+          volumeMounts:
+            - name: tools
+              mountPath: /config
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.liveness }}
+              port: http
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readiness }}
+              port: http
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: tools
+          configMap:
+            name: {{ include "vectorsmith.fullname" . }}-tools

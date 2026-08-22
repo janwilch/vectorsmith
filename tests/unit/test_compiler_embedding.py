@@ -46,6 +46,23 @@ def test_tds_default_when_defaults_omitted() -> None:
     assert plan.embedding == "fastembed/BAAI/bge-small-en-v1.5"
 
 
+def test_object_query_embedding_wins() -> None:
+    src = _base()
+    src["defaults"] = {
+        "embedding": {"provider": "fastembed", "model": "defaults/should-not-win"}
+    }
+    src["tools"][0]["query"] = {
+        "param": "query",
+        "embedding": {"provider": "fastembed", "model": "tool/override"},
+    }
+    project = load_project(src, env={"QDRANT_URL": "http://localhost:6333"})
+    plan = project.tools["search_invoices"].plan
+    assert plan is not None
+    assert plan.embedding == "tool/override"
+    assert plan.embed_spec is not None
+    assert plan.embed_spec.provider == "fastembed"
+
+
 def test_defaults_embedding_without_query_block() -> None:
     src = _base()
     del src["tools"][0]["query"]

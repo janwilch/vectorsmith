@@ -20,6 +20,8 @@ class Capabilities:
     scroll: bool
     count_with_filter: bool
     hybrid: bool
+    score_threshold: bool = False
+    hnsw_ef: bool = False
 
 
 LCD = frozenset({"eq", "ne", "gt", "gte", "lt", "lte", "in", "nin"})
@@ -37,6 +39,8 @@ QDRANT_CAPS = Capabilities(
     scroll=True,
     count_with_filter=True,
     hybrid=True,
+    score_threshold=True,
+    hnsw_ef=True,
 )
 
 PGVECTOR_CAPS = Capabilities(

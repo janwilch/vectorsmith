@@ -29,7 +29,7 @@ Open [`examples/qdrant_invoices/tools.invoices.yaml`](https://github.com/kjgpta/
 - **`static_filters`** the model never sees (`tenant: acme`)
 - **Parameters** the model may pass (`client`, `status`, `min_amount`)
 
-Full contract: [tools.yaml reference](tools-yaml-reference.md).
+Full contract: [tools.yaml reference](tools-yaml-reference.md). Inventory of extras and HTTP routes: [library surface](library.md).
 
 Or generate a starter:
 

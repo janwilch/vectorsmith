@@ -11,6 +11,9 @@ HTTP MCP (`vectorsmith serve --http`) for claude.ai or any remote MCP client. St
 | File | Use |
 |---|---|
 | [Dockerfile](Dockerfile) | Image; build from the **repository root** |
+| [docker/Dockerfile](docker/Dockerfile) | Same image, JWT/Redis extras, `--shutdown-grace-s` |
+| [compose/docker-compose.yaml](compose/docker-compose.yaml) | Qdrant + Redis + serve for local HTTP |
+| [helm/vectorsmith](helm/vectorsmith) | Chart: probes, HPA, PDB, Redis auth store, ingress |
 | [k8s.yaml](k8s.yaml) | Deployment + Service |
 | [cloudrun.yaml](cloudrun.yaml) | Cloud Run |
 | [fly.toml](fly.toml) | Fly.io |

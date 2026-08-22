@@ -41,6 +41,24 @@ uv run vectorsmith serve examples/qdrant_invoices/tools.tickets.yaml --name tick
 
 `load_project()` (authoring API) interpolates the env map you pass, synthesizes builtins, validates, and compiles. The CLI `validate` / `serve` / `test` commands interpolate **only** `--env-file` (they do not merge the process environment).
 
+## `enterprise`
+
+Reference catalog: JWT auth defaults, claim tenancy, RBAC, audit, `tds_version: "2"`.
+
+| File | Role |
+|---|---|
+| [`enterprise/tools.yaml`](enterprise/tools.yaml) | Production-shaped YAML |
+| [`enterprise/.env.example`](enterprise/.env.example) | `QDRANT_URL`, `JWKS_URL`, … |
+
+```bash
+uv run vectorsmith validate examples/enterprise/tools.yaml \
+  --env-file examples/enterprise/.env.example
+uv run vectorsmith validate examples/enterprise/tools.yaml --enterprise --strict \
+  --env-file examples/enterprise/.env.example
+```
+
+`--enterprise` warns **VE007** while the file uses FastEmbed (swap to a remote embedder for a clean gate). Docs: [enterprise](../docs/enterprise.md), [hardening](../docs/security-hardening.md).
+
 ## Agent frameworks (in-process `load_tools`)
 
 | Directory | Import |

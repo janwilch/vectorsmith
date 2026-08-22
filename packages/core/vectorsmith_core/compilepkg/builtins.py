@@ -29,7 +29,7 @@ def synthesize(tds: TDSFile, *, sparse: dict[str, bool] | None = None) -> TDSFil
         bd = conn.builtin_defaults
         caps = CAPS_BY_BACKEND[conn.backend]
         collections = bd.collections
-        static = list(bd.static_filters)
+        static = bd.static_filters
         output = bd.output
         desc_over = bd.descriptions or {}
 

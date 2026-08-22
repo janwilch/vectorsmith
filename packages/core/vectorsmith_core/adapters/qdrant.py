@@ -181,6 +181,11 @@ class QdrantAdapter(VectorBackendAdapter):
             )
             rows = [_row(p, None) for p in points]
             return RowBatch(rows=rows, exhausted=len(points) < req.limit)
+        extra: dict[str, Any] = {}
+        if req.min_score is not None:
+            extra["score_threshold"] = req.min_score
+        if req.search_ef is not None:
+            extra["search_params"] = qm.SearchParams(hnsw_ef=req.search_ef)
         if hasattr(client, "query_points"):
             res = await client.query_points(
                 collection_name=req.collection,
@@ -188,6 +193,7 @@ class QdrantAdapter(VectorBackendAdapter):
                 query_filter=native,
                 limit=req.limit,
                 with_payload=_payload_arg(req.projection),
+                **extra,
             )
             hits = getattr(res, "points", res)
         else:
@@ -197,6 +203,7 @@ class QdrantAdapter(VectorBackendAdapter):
                 query_filter=native,
                 limit=req.limit,
                 with_payload=_payload_arg(req.projection),
+                **extra,
             )
         rows = [_row(h, getattr(h, "score", None)) for h in hits]
         return RowBatch(rows=rows, exhausted=True)
@@ -222,6 +229,9 @@ class QdrantAdapter(VectorBackendAdapter):
             query = qm.FusionQuery(fusion=qm.Fusion.RRF)
         else:
             query = req.vector
+        extra: dict[str, Any] = {}
+        if req.min_score is not None:
+            extra["score_threshold"] = req.min_score
         res = await client.query_points(
             collection_name=req.collection,
             prefetch=prefetch or None,
@@ -229,6 +239,7 @@ class QdrantAdapter(VectorBackendAdapter):
             query_filter=native,
             limit=req.limit,
             with_payload=_payload_arg(req.projection),
+            **extra,
         )
         hits = getattr(res, "points", res)
         rows = [_row(h, getattr(h, "score", None)) for h in hits]

@@ -10,6 +10,7 @@ from vectorsmith_cli.drafts_cmd import run_approve, run_drafts
 from vectorsmith_cli.identity import DEFAULT_SERVER_NAME
 from vectorsmith_cli.init_cmd import run_init
 from vectorsmith_cli.introspect_cmd import run_introspect
+from vectorsmith_cli.migrate_cmd import run_migrate
 from vectorsmith_cli.serve_http import serve_http
 from vectorsmith_cli.serve_stdio import serve_stdio
 from vectorsmith_cli.test_cmd import run_test
@@ -36,22 +37,53 @@ def init(
 def validate(
     tools: Path = typer.Argument(..., help="Path to tools.yaml"),
     live: bool = typer.Option(False, "--live"),
+    live_embed: bool = typer.Option(
+        False, "--live-embed", help="Smoke-test the embedding provider (implies --live)"
+    ),
     as_json: bool = typer.Option(False, "--json"),
     strict: bool = typer.Option(False, "--strict"),
     env_file: Path | None = typer.Option(None, "--env-file"),
+    enterprise: bool = typer.Option(False, "--enterprise"),
+    profile: str | None = typer.Option(None, "--profile"),
+    policy: Path | None = typer.Option(None, "--policy"),
+    policy_builtin: str | None = typer.Option(None, "--policy-builtin"),
 ) -> None:
     """Validate a TDS file."""
     raise SystemExit(
-        run_validate(tools, live=live, as_json=as_json, strict=strict, env_file=env_file)
+        run_validate(
+            tools,
+            live=live or live_embed,
+            live_embed=live_embed,
+            as_json=as_json,
+            strict=strict,
+            env_file=env_file,
+            enterprise=enterprise,
+            profile=profile,
+            policy=policy,
+            policy_builtin=policy_builtin,
+        )
     )
 
 
 @app.command("serve")
 def serve_cmd(
-    tools: Path = typer.Argument(..., help="Path to tools.yaml"),
+    tools: list[Path] = typer.Argument(..., help="Path(s) to tools.yaml"),
     http: str | None = typer.Option(None, "--http", help="HOST:PORT for streamable HTTP"),
-    auth: str = typer.Option("builtin", "--auth"),
+    auth: str = typer.Option(
+        "builtin",
+        "--auth",
+        help="HTTP auth: builtin | jwt | api_key | none (none is loopback only)",
+    ),
     public_url: str | None = typer.Option(None, "--public-url"),
+    jwt_issuer: str | None = typer.Option(None, "--jwt-issuer"),
+    jwt_audience: str | None = typer.Option(None, "--jwt-audience"),
+    jwks_url: str | None = typer.Option(None, "--jwks-url"),
+    api_keys_file: Path | None = typer.Option(None, "--api-keys-file"),
+    auth_store: str = typer.Option("sqlite", "--auth-store", help="sqlite | redis"),
+    redis_url: str | None = typer.Option(None, "--redis-url"),
+    audit_log: Path | None = typer.Option(None, "--audit-log"),
+    audit_sink: str | None = typer.Option(None, "--audit-sink"),
+    audit_url: str | None = typer.Option(None, "--audit-url"),
     env_file: Path | None = typer.Option(None, "--env-file"),
     enable_define: bool = typer.Option(False, "--enable-define"),
     meta_tools: bool = typer.Option(
@@ -63,32 +95,60 @@ def serve_cmd(
         ),
     ),
     watch: bool = typer.Option(True, "--watch/--no-watch"),
+    live_embed: bool = typer.Option(
+        False, "--live-embed", help="Check embed provider health on GET /readyz"
+    ),
     name: str = typer.Option(
         DEFAULT_SERVER_NAME,
         "--name",
         help="MCP serverInfo.name; also the mcpServers key you set in Claude / your SDK",
     ),
+    route_by_claim: str | None = typer.Option(None, "--route-by-claim"),
+    default_project: str | None = typer.Option(None, "--default-project"),
+    shutdown_grace_s: int = typer.Option(30, "--shutdown-grace-s"),
+    log_format: str = typer.Option("text", "--log-format", help="text | json"),
+    log_level: str = typer.Option("info", "--log-level"),
 ) -> None:
     """Serve tools over MCP stdio or HTTP."""
     if http:
         serve_http(
-            tools,
+            tools if len(tools) > 1 else tools[0],
             bind=http,
             auth=auth,
             public_url=public_url,
             env_file=env_file,
             enable_define=enable_define,
             include_meta=meta_tools,
+            live_embed=live_embed,
             name=name,
+            jwt_issuer=jwt_issuer,
+            jwt_audience=jwt_audience,
+            jwks_url=jwks_url,
+            api_keys_file=api_keys_file,
+            auth_store=auth_store,
+            redis_url=redis_url,
+            audit_log=audit_log,
+            audit_sink=audit_sink,
+            audit_url=audit_url,
+            route_by_claim=route_by_claim,
+            default_project=default_project,
+            shutdown_grace_s=shutdown_grace_s,
+            log_format=log_format,
+            log_level=log_level,
         )
         return
     serve_stdio(
-        tools,
+        tools[0],
         env_file=env_file,
         enable_define=enable_define,
         include_meta=meta_tools,
         watch=watch,
         name=name,
+        audit_log=audit_log,
+        audit_sink=audit_sink,
+        audit_url=audit_url,
+        log_format=log_format,
+        log_level=log_level,
     )
 
 
@@ -165,3 +225,23 @@ def auth(
         return
     print("usage: auth rotate-secret | revoke", file=__import__("sys").stderr)
     raise SystemExit(2)
+
+
+@app.command()
+def migrate(
+    tools: Path = typer.Argument(..., help="Path to tools.yaml"),
+    from_version: str = typer.Option("1", "--from"),
+    to_version: str = typer.Option("2", "--to"),
+    dry_run: bool = typer.Option(False, "--dry-run"),
+    write: bool = typer.Option(False, "--write"),
+) -> None:
+    """Rewrite a TDS file between versions."""
+    raise SystemExit(
+        run_migrate(
+            tools,
+            from_version=from_version,
+            to_version=to_version,
+            dry_run=dry_run,
+            write=write,
+        )
+    )

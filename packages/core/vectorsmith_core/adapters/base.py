@@ -22,6 +22,8 @@ class SearchRequest(BaseModel):
     offset: int | None = None
     projection: list[str] | None = None
     with_score: bool = True
+    min_score: float | None = None
+    search_ef: int | None = None
 
 
 class RowBatch(BaseModel):

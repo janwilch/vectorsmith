@@ -113,9 +113,10 @@ Requires `vectorsmith[anthropic]` (or `pip install anthropic` plus `vectorsmith[
 | `truncated` | Hit `limit` |
 | `may_be_incomplete` | Pipeline over-fetch cap; caveat the answer |
 | `search_mode` | `dense` · `hybrid` · `none` |
-| `warnings` | e.g. `VB4001`–`VB4004` |
+| `warnings` | e.g. `VB4001`–`VB4004`, `VB4020`, `VB4030` |
 | `latency_ms` | Engine timing |
-| `exact_search` / `compiled_query` | Present on some results |
+| `message` | Human hint (directory resolve alternatives) |
+| `exact_search` / `compiled_query` | Present on some results (`compiled_query` when `test --show-plan`) |
 
 ---
 
@@ -135,17 +136,38 @@ project.issues   # VBxxxx
 
 ---
 
+## Exceptions
+
+`connect` / `call` raise subclasses of `vectorsmith_core.errors.VectorSmithError`:
+
+| Exception | When |
+|---|---|
+| `MissingEnvError` | `${VAR}` unset or vault path empty |
+| `InvalidArgumentsError` | Unknown tool or schema fail |
+| `RateLimited` | Quotas; `retry_after_s` |
+| `QueryTimeout` | Exceeded `CallContext.deadline_s` (default 25s; HTTP uses this on `engine.call`) |
+| `EmbeddingError` | Embed provider failed |
+| `AuthError` | HTTP auth / RBAC (serve path) |
+| `BackendUnreachable` | Store health / connect failed |
+
+Full table: [library surface](library.md#runtime-exceptions).
+
+---
+
 ## Extras
 
 Store extras (pick one or more): **[vector stores](vector-stores.md)** — `qdrant`, `pgvector`, `chroma`, `pinecone`, `weaviate`, `milvus`. Each extra is the store client plus FastEmbed.
 
-Agent extras (not databases):
-
 | Extra | What you get |
 |---|---|
-| `langchain` | `langchain-core` |
+| `langchain` | `langchain-core` (`load_tools`) |
 | `langgraph` | `langchain-core` + `langgraph` |
 | `openai-agents` | OpenAI Agents SDK |
 | `anthropic` | Anthropic SDK |
+| `embed-openai` | OpenAI / Azure embed (+ expand if you use `provider: openai`) |
+| `embed-cohere` | Cohere embed / rerank |
+| `auth-jwt` | `serve --auth jwt` |
+| `auth-redis` | Redis token store and rate-limit store |
+| `otel` | OpenTelemetry SDK for `observability.tracing` |
 
-Guides: [integrations](integrations/README.md). Examples: [examples/](https://github.com/kjgpta/vectorsmith/tree/main/examples/README.md).
+Complete inventory: [library surface](library.md). Guides: [integrations](integrations/README.md). Examples: [examples/](https://github.com/kjgpta/vectorsmith/tree/main/examples/README.md).

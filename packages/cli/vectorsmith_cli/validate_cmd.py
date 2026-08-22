@@ -13,9 +13,14 @@ def run_validate(
     tools: Path,
     *,
     live: bool = False,
+    live_embed: bool = False,
     as_json: bool = False,
     strict: bool = False,
     env_file: Path | None = None,
+    enterprise: bool = False,
+    profile: str | None = None,
+    policy: Path | None = None,
+    policy_builtin: str | None = None,
 ) -> int:
     env = _load_env(env_file)
     try:
@@ -24,6 +29,24 @@ def run_validate(
         print(str(exc), file=sys.stderr)
         return 2
     issues = list(project.issues)
+    if enterprise or profile == "enterprise":
+        from vectorsmith_core.compilepkg.enterprise import enterprise_issues
+        from vectorsmith_core.tds.loader import read_source
+
+        raw = read_source(tools)
+        issues.extend(
+            enterprise_issues(project.tds, raw=raw if isinstance(raw, dict) else None)
+        )
+    if policy or policy_builtin:
+        from vectorsmith_core.policy.eval_policy import eval_policies
+
+        issues.extend(
+            eval_policies(
+                project.tds,
+                policy_path=policy,
+                builtin=policy_builtin,
+            )
+        )
     if live:
         import asyncio
 
@@ -33,7 +56,7 @@ def run_validate(
         async def _live() -> list:
             engine = Engine(project, credential_resolver=EnvCredentialResolver(env))
             try:
-                return await engine.validate_live()
+                return await engine.validate_live(live_embed=live_embed)
             finally:
                 await engine.aclose()
 

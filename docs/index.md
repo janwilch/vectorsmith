@@ -49,7 +49,13 @@ Same file either way. The agent never sees the store URL, the API key, or hidden
 |---|---|
 | [Vector stores](vector-stores.md) | Qdrant, pgvector, Chroma, Pinecone, Weaviate, Milvus |
 | [tools.yaml](tools-yaml-reference.md) | Every field, operators, pipelines, `VBxxxx` |
-| [CLI](cli.md) | `init` · `validate` · `serve` · `test` · `introspect` · `drafts` · `approve` · `auth` |
+| [Library surface](library.md) | Extras, HTTP routes, exceptions, public imports |
+| [CLI](cli.md) | `init` · `validate` · `serve` · `test` · `introspect` · `migrate` · `drafts` · `approve` · `auth` |
+| [Enterprise](enterprise.md) | Auth, tenancy, RBAC, audit |
+| [Security hardening](security-hardening.md) | `--enterprise` checklist |
+| [Embedding providers](embedding-providers.md) | FastEmbed, OpenAI, Azure, Cohere, HTTP |
+| [Observability](observability.md) | Audit, traces, metrics, JSON logs |
+| [Kubernetes](deploy/kubernetes.md) | Helm, probes, Redis auth store |
 | [Python API](python-api.md) | `connect`, `load_tools`, extras, return envelope |
 
 ### Explanation
@@ -60,7 +66,7 @@ Same file either way. The agent never sees the store URL, the API key, or hidden
 | [FAQ](faq.md) | Desktop disconnects, env interpolation, HTTP auth, hybrids |
 | [Repository map](repository.md) | What each top-level path is for |
 
-Examples in the repo: [invoice + ticket YAML, agent apps, MCP host configs](https://github.com/kjgpta/vectorsmith/tree/main/examples).
+Examples in the repo: [invoice + ticket YAML, enterprise JWT catalog, agent apps, MCP host configs](https://github.com/kjgpta/vectorsmith/tree/main/examples).
 
 ---
 
@@ -76,10 +82,12 @@ pip install "vectorsmith[qdrant,anthropic]"
 
 Store extras: see [vector stores](vector-stores.md) (`qdrant` · `pgvector` · `chroma` · `pinecone` · `weaviate` · `milvus`).
 
+Also: `embed-openai` · `embed-cohere` · `auth-jwt` · `auth-redis` · `otel`. Full list: [library surface](library.md).
+
 ---
 
 ## Status
 
-**0.1.2.** Read-only tools from YAML. Application code uses `from vectorsmith import load_tools` or `connect` — do not import `Engine`.
+**0.1.3.** Read-only tools from YAML. Application code uses `from vectorsmith import load_tools` or `connect` — do not import `Engine`.
 
 Source: [github.com/kjgpta/vectorsmith](https://github.com/kjgpta/vectorsmith).

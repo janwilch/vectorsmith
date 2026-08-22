@@ -128,7 +128,13 @@ class EnvCredentialResolver:
 
 
 class EmbedProvider(Protocol):
-    async def embed(self, texts: list[str], model: str) -> list[list[float]]: ...
+    async def embed(
+        self,
+        texts: list[str],
+        model: str,
+        *,
+        config: Any = None,
+    ) -> list[list[float]]: ...
 
     def dims(self, model: str) -> int: ...
 
@@ -136,6 +142,11 @@ class EmbedProvider(Protocol):
 class CallContext(BaseModel):
     request_id: str
     deadline_s: float = 25.0
+    principal: str | None = None
+    claims: dict[str, Any] = Field(default_factory=dict)
+    tenant_value: str | None = None
+    tenant_filter: Any | None = None
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ToolResult(BaseModel):
@@ -148,11 +159,13 @@ class ToolResult(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     latency_ms: int = 0
     compiled_query: dict[str, Any] | None = None
+    message: str | None = None
 
 
 class HealthStatus(BaseModel):
     ok: bool
     detail: str = ""
+    latency_ms: int | None = None
 
 
 def load_project(
