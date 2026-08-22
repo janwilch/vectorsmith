@@ -76,6 +76,7 @@ module = [
     "fastembed",
     "opentelemetry",
     "opentelemetry.*",
+    "redis",
 ]
 ignore_missing_imports = true
 

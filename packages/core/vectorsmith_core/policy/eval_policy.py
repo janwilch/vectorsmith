@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from vectorsmith_core.tds.models import TDSFile
 
 
-def _issue(code: str, message: str, *, severity: str = "error") -> Any:
+def _issue(code: str, message: str, *, severity: Literal["error", "warning"] = "error") -> Any:
     from vectorsmith_core.api import Issue
 
     return Issue(severity=severity, code=code, message=message)

@@ -259,7 +259,7 @@ async def _embed_one(embed: Any, text: str, plan: Any) -> list[float]:
         except Exception as exc:
             raise EmbeddingError(detail=str(exc)) from exc
     inc_embed(str(provider))
-    return vectors[0]
+    return [float(x) for x in vectors[0]]
 
 
 async def _search_variants(

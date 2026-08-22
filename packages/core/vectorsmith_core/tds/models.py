@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Annotated, Any, Literal, Union
 
 from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, PrivateAttr, model_validator
@@ -43,7 +44,7 @@ class StaticFilters(_Base):
     def __bool__(self) -> bool:
         return bool(self.must or self.must_not)
 
-    def __iter__(self):  # type: ignore[override]
+    def __iter__(self) -> Iterator[StaticFilter]:  # type: ignore[override]
         return iter(self.must)
 
 

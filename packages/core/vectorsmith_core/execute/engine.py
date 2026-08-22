@@ -13,7 +13,11 @@ from vectorsmith_core.errors import InvalidArgumentsError, QueryTimeout, RateLim
 from vectorsmith_core.execute.single_step import execute_single
 from vectorsmith_core.observe.metrics import inc_rate_limit, inc_tool_call, observe_latency
 from vectorsmith_core.observe.tracing import start_span
-from vectorsmith_core.security.rate_limit import build_rate_limiter, enforce_rate_limits
+from vectorsmith_core.security.rate_limit import (
+    RateLimiter,
+    build_rate_limiter,
+    enforce_rate_limits,
+)
 from vectorsmith_core.security.rbac import check_rbac
 from vectorsmith_core.security.tenancy import bind_tenancy, enforce_tenancy, require_tenancy
 from vectorsmith_core.tds.models import ChromaConn, PgvectorConn, QdrantConn
@@ -48,7 +52,7 @@ class Engine:
         self.resolver = credential_resolver
         self.embed = embed_provider
         self.audit_sink = audit_sink
-        self.rate_limiter = None
+        self.rate_limiter: RateLimiter | None = None
         self._adapters: dict[str, Any] = {}
 
     async def _adapter(self, connection: str) -> Any:

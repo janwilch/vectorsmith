@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from vectorsmith_core.tds.models import TDSFile
 
@@ -11,7 +11,7 @@ def _issue(
     code: str,
     message: str,
     *,
-    severity: str = "error",
+    severity: Literal["error", "warning"] = "error",
     tool: str | None = None,
     path: str | None = None,
 ) -> Any:

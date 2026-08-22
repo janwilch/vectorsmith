@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from typing import Any
+from typing import Any, Literal
 
 _enabled = False
 _service = "vectorsmith"
@@ -17,7 +17,7 @@ class _Noop:
     def __enter__(self) -> _Noop:
         return self
 
-    def __exit__(self, *args: object) -> bool:
+    def __exit__(self, *args: object) -> Literal[False]:
         return False
 
     def set_attribute(self, *_a: object, **_k: object) -> None:
@@ -39,7 +39,7 @@ class _MemSpan:
         self._otel = _start_otel(self.name, self.attrs)
         return self
 
-    def __exit__(self, *args: object) -> bool:
+    def __exit__(self, *args: object) -> Literal[False]:
         if _stack and _stack[-1] == self.name:
             _stack.pop()
         if self._otel is not None:
