@@ -85,6 +85,7 @@ plugins:
 
 exclude_docs: |
   /README.md
+  /includes/
 
 nav:
   - Home: index.md

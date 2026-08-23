@@ -10,6 +10,12 @@ Write a `tools.yaml`. VectorSmith compiles it into typed, tenant-guarded tools �
 pip install "vectorsmith[qdrant]"
 ```
 
+<p align="center">
+  <a href="../../docs/assets/demo-launch.mp4">
+    <img src="../../docs/assets/demo-launch-thumb.png" alt="VectorSmith demo (~28s)" width="720" />
+  </a>
+</p>
+
 Store extras: `qdrant` · `pgvector` · `chroma` · `pinecone` · `weaviate` · `milvus` — [which stores ship](https://kjgpta.github.io/vectorsmith/vector-stores/).
 
 ## Two doors, one YAML

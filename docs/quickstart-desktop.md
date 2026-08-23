@@ -4,6 +4,8 @@ Hub: [documentation home](index.md) · [Claude Desktop](integrations/claude-desk
 
 VectorSmith is the library. This example is two projects — invoices and tickets — under [`examples/qdrant_invoices`](https://github.com/kjgpta/vectorsmith/tree/main/examples/qdrant_invoices).
 
+--8<-- "docs/includes/demo-video-root.md"
+
 ```bash
 uv sync
 uv run vectorsmith validate examples/qdrant_invoices/tools.invoices.yaml \

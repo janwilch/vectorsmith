@@ -4,6 +4,8 @@ Docs hub: [docs/README.md](../docs/README.md). YAML contract: [tools.yaml refere
 
 How a user authors VectorSmith tools against their own vector database, then uses them in an agent or over MCP.
 
+[![VectorSmith demo (~28s)](../docs/assets/demo-launch-thumb.png)](../docs/assets/demo-launch.mp4)
+
 Copy [`qdrant_invoices/.env.example`](qdrant_invoices/.env.example) to `.env` and set `QDRANT_URL` to your cluster. The committed example is `http://localhost:6333` only.
 
 ## `qdrant_invoices`

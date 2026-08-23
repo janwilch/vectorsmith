@@ -6,6 +6,10 @@ This walkthrough uses the invoice example. Copy `.env.example` and set `QDRANT_U
 
 You need Python 3.11+ and [uv](https://docs.astral.sh/uv/) (or `pip`).
 
+The 28s walkthrough (problem → YAML → Claude):
+
+--8<-- "docs/includes/demo-video-root.md"
+
 ## 1. Install from a clone
 
 ```bash

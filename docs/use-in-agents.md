@@ -2,6 +2,8 @@
 
 Two paths, one YAML. Hub: [documentation home](index.md) · [Python API](python-api.md) · [integrations](integrations/README.md).
 
+--8<-- "docs/includes/demo-video-root.md"
+
 **Python app** — import one function. No MCP subprocess.
 
 ```bash

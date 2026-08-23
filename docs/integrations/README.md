@@ -12,6 +12,8 @@ Two ways to use a `tools.yaml`. Pick the one your product supports.
 
 Same YAML either way. Do not import `Engine`. Field-by-field: [tools.yaml](../tools-yaml-reference.md). Extras and public imports: [library surface](../library.md).
 
+--8<-- "docs/includes/demo-video.md"
+
 ## MCP hosts
 
 - [Claude Desktop](claude-desktop.md)

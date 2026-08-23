@@ -11,6 +11,8 @@ pip install "vectorsmith[qdrant]"
 [Get started](getting-started.md){ .md-button .md-button--primary }
 [tools.yaml reference](tools-yaml-reference.md){ .md-button }
 
+--8<-- "docs/includes/demo-video-root.md"
+
 ---
 
 ## Two doors, one YAML
