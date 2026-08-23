@@ -8,8 +8,9 @@ import sys
 from pathlib import Path
 
 from vectorsmith_cli.validate_cmd import _load_env
-from vectorsmith_core.api import EnvCredentialResolver, load_project
+from vectorsmith_core.api import load_project
 from vectorsmith_core.execute.engine import Engine
+from vectorsmith_core.security.credentials import build_credential_resolver
 
 
 def run_introspect(
@@ -26,7 +27,7 @@ def run_introspect(
     project = load_project(tools, env=env)
 
     async def _go() -> dict:
-        engine = Engine(project, credential_resolver=EnvCredentialResolver(env))
+        engine = Engine(project, credential_resolver=build_credential_resolver(env))
         cols = collections.split(",") if collections else None
         return await engine.introspect(
             connection, collections=cols, redact_examples=redact_examples

@@ -101,6 +101,33 @@ class _IncrRedis:
         return 12
 
 
+class _AsyncIncrRedis:
+    def __init__(self, data: dict[str, int]) -> None:
+        self.data = data
+
+    async def incr(self, key: str) -> int:
+        self.data[key] = int(self.data.get(key) or 0) + 1
+        return self.data[key]
+
+    async def expire(self, key: str, _s: int) -> None:
+        _ = key
+
+    async def ttl(self, key: str) -> int:
+        _ = key
+        return 8
+
+
+@pytest.mark.asyncio
+async def test_redis_async_client_does_not_use_thread() -> None:
+    shared: dict[str, int] = {}
+    limiter = RedisRateLimiter(client=_AsyncIncrRedis(shared))
+    assert limiter._async is True
+    await limiter.check("alice:search_invoices", 1, 60)
+    with pytest.raises(RateLimited) as exc:
+        await limiter.check("alice:search_invoices", 1, 60)
+    assert exc.value.retry_after_s == 8
+
+
 @pytest.mark.asyncio
 async def test_redis_store_shared_across_replicas() -> None:
     shared: dict[str, int] = {}

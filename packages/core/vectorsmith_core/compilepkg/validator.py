@@ -99,6 +99,61 @@ def validate(tds: TDSFile, *, live_sparse: dict[str, bool] | None = None) -> lis
     issues.extend(_embed_provider_issues(tds))
     issues.extend(_tenancy_issues(tds))
     issues.extend(_rbac_issues(tds))
+    issues.extend(_credential_issues(tds))
+    issues.extend(_rerank_provider_issues(tds))
+    return issues
+
+
+def _credential_issues(tds: TDSFile) -> list[Any]:
+    issues: list[Any] = []
+    for name, conn in tds.connections.items():
+        creds = conn.credentials
+        path = f"connections.{name}.credentials"
+        if creds.provider == "vault" and not creds.vault.path:
+            issues.append(
+                _issue(
+                    "VB4040",
+                    f"connection '{name}' credentials.provider vault needs vault.path",
+                    path=path,
+                )
+            )
+        if creds.provider == "aws_sm" and not creds.aws_sm.secret_id:
+            issues.append(
+                _issue(
+                    "VB4041",
+                    f"connection '{name}' credentials.provider aws_sm needs aws_sm.secret_id",
+                    path=path,
+                )
+            )
+        if creds.provider == "k8s" and not creds.k8s.secret:
+            issues.append(
+                _issue(
+                    "VB4042",
+                    f"connection '{name}' credentials.provider k8s needs k8s.secret",
+                    path=path,
+                )
+            )
+    return issues
+
+
+def _rerank_provider_issues(tds: TDSFile) -> list[Any]:
+    issues: list[Any] = []
+    for tool in tds.tools:
+        spec = tool.rerank
+        if not spec.enabled or spec.provider != "cross_encoder":
+            continue
+        try:
+            import sentence_transformers  # noqa: F401
+        except ImportError:
+            issues.append(
+                _issue(
+                    "VB4032",
+                    "rerank.provider cross_encoder requires "
+                    "pip install 'vectorsmith[rerank-local]'",
+                    tool=tool.name,
+                    severity="warning",
+                )
+            )
     return issues
 
 

@@ -88,6 +88,6 @@ Also: `embed-openai` · `embed-cohere` · `auth-jwt` · `auth-redis` · `otel`. 
 
 ## Status
 
-**0.1.3.** Read-only tools from YAML. Application code uses `from vectorsmith import load_tools` or `connect` — do not import `Engine`.
+**0.1.4.** Read-only tools from YAML. Application code uses `from vectorsmith import load_tools` or `connect` — do not import `Engine`.
 
 Source: [github.com/kjgpta/vectorsmith](https://github.com/kjgpta/vectorsmith).

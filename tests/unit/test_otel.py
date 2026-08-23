@@ -28,6 +28,20 @@ def _src() -> dict[str, Any]:
     }
 
 
+def test_configure_tracing_accepts_endpoint() -> None:
+    tracing.configure_tracing(
+        True, service_name="unit", endpoint="http://collector:4318", exporter="otlp"
+    )
+    assert tracing._endpoint == "http://collector:4318"
+    assert tracing._exporter == "otlp"
+    tracing.configure_tracing(False)
+
+
+def test_current_trace_context_empty_without_span() -> None:
+    tracing.configure_tracing(False)
+    assert tracing.current_trace_context() == {}
+
+
 def test_tracing_disabled_records_nothing() -> None:
     tracing.configure_tracing(False)
     tracing.reset_spans()

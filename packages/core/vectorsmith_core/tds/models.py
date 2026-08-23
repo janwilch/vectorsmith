@@ -103,10 +103,17 @@ class AwsSmSpec(_Base):
     region: str | None = None
 
 
+class K8sSpec(_Base):
+    secret: str | None = None
+    key: str | None = None
+    namespace: str | None = None
+
+
 class ConnectionCredentials(_Base):
     provider: Literal["env", "vault", "aws_sm", "k8s"] = "env"
     vault: VaultCredSpec = Field(default_factory=VaultCredSpec)
     aws_sm: AwsSmSpec = Field(default_factory=AwsSmSpec)
+    k8s: K8sSpec = Field(default_factory=K8sSpec)
 
 
 class _ConnBase(_Base):

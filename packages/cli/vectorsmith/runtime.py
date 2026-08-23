@@ -8,8 +8,9 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
-from vectorsmith_core.api import CallContext, EnvCredentialResolver, load_project
+from vectorsmith_core.api import CallContext, load_project
 from vectorsmith_core.execute.engine import Engine
+from vectorsmith_core.security.credentials import build_credential_resolver
 
 
 def _read_env_file(path: Path | None) -> dict[str, str]:
@@ -42,17 +43,34 @@ def _one_engine(source: str | Path | dict[str, Any], env: Mapping[str, str]) -> 
     if errors:
         msgs = "; ".join(f"{i.code} {i.message}" for i in errors)
         raise ValueError(f"tools.yaml failed validation: {msgs}")
+    from vectorsmith_core.security.hardening import serve_hardening_errors
+
+    hard = serve_hardening_errors(project.tds)
+    if hard:
+        raise ValueError("tools.yaml failed enterprise hardening: " + "; ".join(hard))
     try:
         from vectorsmith_core.embed.provider import FastEmbedProvider
 
         embed: FastEmbedProvider | None = FastEmbedProvider()
     except Exception:
         embed = None
-    return Engine(
+    from vectorsmith_core.observe.metrics import configure_metrics
+    from vectorsmith_core.observe.tracing import configure_tracing
+
+    engine = Engine(
         project,
-        credential_resolver=EnvCredentialResolver(env),
+        credential_resolver=build_credential_resolver(env),
         embed_provider=embed,
     )
+    obs = project.tds.observability
+    configure_tracing(
+        obs.tracing.enabled,
+        service_name=obs.tracing.service_name,
+        endpoint=obs.tracing.endpoint,
+        exporter=obs.tracing.exporter,
+    )
+    configure_metrics(obs.metrics.enabled)
+    return engine
 
 
 class BoundTools:

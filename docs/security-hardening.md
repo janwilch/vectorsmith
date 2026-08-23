@@ -19,7 +19,7 @@ vectorsmith validate tools.yaml --policy-builtin enterprise,pci,soc2
 | VE006 | Builtin auth on a public URL without HTTPS (serve-time) |
 | VE007 | `defaults.embedding.provider: fastembed` (warning) |
 
-`--profile enterprise` merges `profiles.enterprise.security.hardening` from the YAML.
+`--profile enterprise` and a present `profiles.enterprise` block merge `security.hardening` at **validate, serve, and `connect`/`load_tools`**: `disable_authoring` / `disable_meta_tools` win over `--enable-define` / `--meta-tools`; `require_tenancy`, `max_limit_max`, and `allowed_backends` refuse start. Multi-project HTTP unions every file's flags (strictest authoring/meta; tracing/metrics if any project enables them).
 
 ## Checklist
 
@@ -34,4 +34,6 @@ vectorsmith validate tools.yaml --policy-builtin enterprise,pci,soc2
 9. `--shutdown-grace-s 30` and `--log-format json`
 10. CI: `validate --enterprise --strict`
 
-Policy packs (`pci`, `soc2`) ship in `vectorsmith_core/policy/`. Custom Rego needs the `opa` CLI (`POL000` if missing).
+Policy packs (`pci`, `soc2`) ship in `vectorsmith_core/policy/` and run in-process. Custom `--policy path.rego` runs `opa eval` with `{"tds": ...}` on stdin; each Rego `deny` becomes **POL001**. **POL000** if the `opa` CLI is missing or eval fails.
+
+`parameters[].resolve.kind: directory` caches distinct values **per process**. Replicas do not share that cache.

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any, Protocol
+
+_CROSS_ENCODERS: dict[str, Any] = {}
 
 
 class RerankProvider(Protocol):
@@ -44,6 +47,46 @@ class _HTTPRerank:
         return out or rows
 
 
+def _cross_encoder_for(model: str) -> Any:
+    hit = _CROSS_ENCODERS.get(model)
+    if hit is not None:
+        return hit
+    try:
+        from sentence_transformers import CrossEncoder
+    except ImportError as exc:
+        raise RuntimeError(
+            "cross_encoder requires pip install 'vectorsmith[rerank-local]'"
+        ) from exc
+    encoder = CrossEncoder(model)
+    _CROSS_ENCODERS[model] = encoder
+    return encoder
+
+
+def clear_cross_encoder_cache() -> None:
+    _CROSS_ENCODERS.clear()
+
+
+class _CrossEncoderRerank:
+    async def rerank(
+        self, query: str, rows: list[dict[str, Any]], *, spec: Any
+    ) -> list[dict[str, Any]]:
+        cfg = dict(getattr(spec, "config", {}) or {})
+        model = str(
+            getattr(spec, "model", None)
+            or cfg.get("model")
+            or "cross-encoder/ms-marco-MiniLM-L-6-v2"
+        )
+        encoder = _cross_encoder_for(model)
+        pairs = [(query, _row_text(row)) for row in rows]
+        scores = await asyncio.to_thread(lambda: list(encoder.predict(pairs)))
+        ranked = sorted(
+            zip(scores, rows, strict=True),
+            key=lambda item: float(item[0]),
+            reverse=True,
+        )
+        return [row for _score, row in ranked]
+
+
 class _CohereRerank:
     async def rerank(
         self, query: str, rows: list[dict[str, Any]], *, spec: Any
@@ -69,7 +112,11 @@ class _CohereRerank:
 def resolve_rerank_provider(name: str) -> RerankProvider:
     if name == "cohere":
         return _CohereRerank()
-    return _HTTPRerank()
+    if name == "cross_encoder":
+        return _CrossEncoderRerank()
+    if name == "http":
+        return _HTTPRerank()
+    raise RuntimeError(f"unknown rerank provider '{name}'")
 
 
 def _row_text(row: dict[str, Any]) -> str:

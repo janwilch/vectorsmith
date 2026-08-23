@@ -7,6 +7,8 @@ from typing import Any, Literal
 
 _enabled = False
 _service = "vectorsmith"
+_endpoint = "http://localhost:4318"
+_exporter = "otlp"
 _recorded: list[tuple[str, dict[str, Any]]] = []
 _stack: list[str] = []
 
@@ -51,12 +53,40 @@ class _MemSpan:
         self.attrs[key] = value
 
 
-def configure_tracing(enabled: bool = False, *, service_name: str = "vectorsmith") -> None:
-    global _enabled, _service
+def configure_tracing(
+    enabled: bool = False,
+    *,
+    service_name: str = "vectorsmith",
+    endpoint: str | None = None,
+    exporter: str | None = None,
+) -> None:
+    global _enabled, _service, _endpoint, _exporter
     _enabled = bool(enabled)
     _service = service_name
+    if endpoint:
+        _endpoint = endpoint
+    if exporter:
+        _exporter = exporter
     if _enabled:
         _try_otel()
+
+
+def _span_exporter() -> Any:
+    if _exporter == "console":
+        from opentelemetry.sdk.trace.export import ConsoleSpanExporter
+
+        return ConsoleSpanExporter()
+    try:
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+
+        url = _endpoint.rstrip("/")
+        if not url.endswith("/v1/traces"):
+            url = f"{url}/v1/traces"
+        return OTLPSpanExporter(endpoint=url)
+    except Exception:
+        from opentelemetry.sdk.trace.export import ConsoleSpanExporter
+
+        return ConsoleSpanExporter()
 
 
 def _try_otel() -> None:
@@ -64,14 +94,31 @@ def _try_otel() -> None:
         from opentelemetry import trace
         from opentelemetry.sdk.resources import Resource
         from opentelemetry.sdk.trace import TracerProvider
-        from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
         resource = Resource.create({"service.name": _service})
         provider = TracerProvider(resource=resource)
-        provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
+        provider.add_span_processor(BatchSpanProcessor(_span_exporter()))
         trace.set_tracer_provider(provider)
     except Exception:
         return
+
+
+def current_trace_context() -> dict[str, str]:
+    """OTel ``trace_id`` / ``span_id`` for the current span, if any."""
+    try:
+        from opentelemetry import trace
+
+        span = trace.get_current_span()
+        ctx = span.get_span_context()
+        if ctx is not None and getattr(ctx, "is_valid", False):
+            return {
+                "trace_id": format(int(ctx.trace_id), "032x"),
+                "span_id": format(int(ctx.span_id), "016x"),
+            }
+    except Exception:
+        return {}
+    return {}
 
 
 def _start_otel(name: str, attrs: dict[str, Any]) -> Any:

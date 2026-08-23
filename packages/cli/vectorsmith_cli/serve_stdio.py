@@ -24,16 +24,18 @@ from vectorsmith_cli.serve_common import (
     mcp_schemas,
     server_instructions,
 )
+from vectorsmith_cli.serve_router import configure_observability
 from vectorsmith_cli.stdio_guard import install as install_stdio_guard
 from vectorsmith_cli.validate_cmd import _load_env
 from vectorsmith_core.api import (
     CallContext,
-    EnvCredentialResolver,
     Project,
     load_project,
 )
 from vectorsmith_core.embed.provider import FastEmbedProvider
 from vectorsmith_core.execute.engine import Engine
+from vectorsmith_core.security.credentials import build_credential_resolver
+from vectorsmith_core.security.hardening import apply_serve_hardening, serve_hardening_errors
 from vectorsmith_core.version import ENGINE_VERSION
 
 log = logging.getLogger("vectorsmith.serve")
@@ -74,6 +76,12 @@ def serve_stdio(
     _quiet_native_progress()
     env = _load_env(env_file)
     project = _assemble(tools, env)
+    for msg in serve_hardening_errors(project.tds):
+        print(msg, file=sys.stderr)
+        raise SystemExit(2)
+    enable_define, include_meta = apply_serve_hardening(
+        project.tds, enable_define=enable_define, include_meta=include_meta
+    )
     drafts_path = tools.parent / "tools.drafts.yaml"
     expire_old_drafts(drafts_path)
     print(
@@ -94,14 +102,17 @@ def serve_stdio(
             sink_name=audit_sink,
             url=audit_url,
         )
+        resolver = build_credential_resolver(env)
+        engine = Engine(
+            project,
+            credential_resolver=resolver,
+            embed_provider=embed,
+            audit_sink=sink,
+        )
+        configure_observability(engine)
         state: dict[str, Any] = {
             "project": project,
-            "engine": Engine(
-                project,
-                credential_resolver=EnvCredentialResolver(env),
-                embed_provider=embed,
-                audit_sink=sink,
-            ),
+            "engine": engine,
             "connection": None,
         }
 
@@ -182,10 +193,11 @@ def serve_stdio(
                         state["project"] = fresh
                         state["engine"] = Engine(
                             fresh,
-                            credential_resolver=EnvCredentialResolver(env),
+                            credential_resolver=resolver,
                             embed_provider=embed,
                             audit_sink=sink,
                         )
+                        configure_observability(state["engine"])
                         print(
                             f"reloaded tools.yaml — {len(fresh.tools)} tool(s)",
                             file=sys.stderr,

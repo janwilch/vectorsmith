@@ -43,11 +43,12 @@ uv run vectorsmith serve examples/qdrant_invoices/tools.tickets.yaml --name tick
 
 ## `enterprise`
 
-Reference catalog: JWT auth defaults, claim tenancy, RBAC, audit, `tds_version: "2"`.
+Reference catalogs: JWT auth defaults, RBAC, audit, `tds_version: "2"`. Claim vs static tenancy are **separate files** so copy-paste does not AND both layers.
 
 | File | Role |
 |---|---|
-| [`enterprise/tools.yaml`](enterprise/tools.yaml) | Production-shaped YAML |
+| [`enterprise/tools.yaml`](enterprise/tools.yaml) | Claim tenancy (JWT `tenant_id`) |
+| [`enterprise/tools.static.yaml`](enterprise/tools.static.yaml) | Static tenancy (`must` tenant filter) |
 | [`enterprise/.env.example`](enterprise/.env.example) | `QDRANT_URL`, `JWKS_URL`, … |
 
 ```bash

@@ -38,7 +38,9 @@ Each store extra also pulls **FastEmbed**. Details: [vector stores](vector-store
 | `embed-cohere` | `provider: cohere` (embed or rerank) |
 | `auth-jwt` | `serve --auth jwt` |
 | `auth-redis` | `--auth-store redis` and `security.rate_limit.store: redis` |
-| `otel` | Optional OpenTelemetry SDK when `observability.tracing.enabled` |
+| `otel` | OpenTelemetry SDK + OTLP HTTP exporter when `observability.tracing.enabled` |
+| `creds-aws` | AWS Secrets Manager credential provider |
+| `rerank-local` | Local `cross_encoder` rerank |
 
 ---
 

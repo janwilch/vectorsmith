@@ -1,4 +1,4 @@
-"""Audit sinks: stdout, append-only file (0600), HTTP POST."""
+"""Audit sinks: stdout, append-only file (0600), HTTP POST, OTLP logs."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -57,6 +58,69 @@ class HTTPSink:
         return None
 
 
+class OTLPSink:
+    """OTLP HTTP JSON logs (collector ``/v1/logs``), not a raw audit POST."""
+
+    def __init__(self, url: str) -> None:
+        dest = url.rstrip("/")
+        if not dest.endswith("/v1/logs"):
+            dest = f"{dest}/v1/logs"
+        self.url = dest
+
+    async def emit(self, event: AuditEvent) -> None:
+        import httpx
+
+        payload = {
+            "resourceLogs": [
+                {
+                    "resource": {
+                        "attributes": [
+                            {
+                                "key": "service.name",
+                                "value": {"stringValue": "vectorsmith"},
+                            }
+                        ]
+                    },
+                    "scopeLogs": [
+                        {
+                            "scope": {"name": "vectorsmith.audit"},
+                            "logRecords": [
+                                {
+                                    "timeUnixNano": str(int(time.time() * 1_000_000_000)),
+                                    "severityText": "INFO",
+                                    "body": {
+                                        "stringValue": json.dumps(event, default=str)
+                                    },
+                                    "attributes": [
+                                        {
+                                            "key": "audit.tool",
+                                            "value": {
+                                                "stringValue": str(event.get("tool") or "")
+                                            },
+                                        },
+                                        {
+                                            "key": "audit.request_id",
+                                            "value": {
+                                                "stringValue": str(
+                                                    event.get("request_id") or ""
+                                                )
+                                            },
+                                        },
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ]
+        }
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await client.post(self.url, json=payload)
+
+    async def flush(self) -> None:
+        return None
+
+
 def build_audit_sink(
     cfg: AuditConfig,
     *,
@@ -74,9 +138,14 @@ def build_audit_sink(
         if path is None:
             path = Path("vectorsmith-audit.jsonl")
         return FileSink(path)
-    if kind in {"http", "otlp"}:
+    if kind == "http":
         if not dest:
-            log.warning("audit http/otlp sink missing url; audit disabled")
+            log.warning("audit http sink missing url; audit disabled")
             return None
         return HTTPSink(dest)
+    if kind == "otlp":
+        if not dest:
+            log.warning("audit otlp sink missing url; audit disabled")
+            return None
+        return OTLPSink(dest)
     return StdoutSink()

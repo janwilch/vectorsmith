@@ -1,4 +1,5 @@
 {
+  "$comment": "TDS v2 shares the v1 structural schema. Differences are meta.tool_catalog_version semantics and the static_filters object form; migrate only rewrites those.",
   "$defs": {
     "APIKeyAuthConfig": {
       "additionalProperties": true,
@@ -397,6 +398,9 @@
         "aws_sm": {
           "$ref": "#/$defs/AwsSmSpec"
         },
+        "k8s": {
+          "$ref": "#/$defs/K8sSpec"
+        },
         "provider": {
           "default": "env",
           "enum": [
@@ -676,6 +680,49 @@
         }
       },
       "title": "JWTAuthConfig",
+      "type": "object"
+    },
+    "K8sSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Key"
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Namespace"
+        },
+        "secret": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Secret"
+        }
+      },
+      "title": "K8sSpec",
       "type": "object"
     },
     "MetricsConfig": {

@@ -78,14 +78,14 @@ tools:
 
 | Key | Required | Meaning |
 |---|---|---|
-| `tds_version` | yes | `"1"` (deprecated, **VB0002**) or `"2"`. `vectorsmith migrate --from 1 --to 2`. |
+| `tds_version` | yes | `"1"` (deprecated, **VB0002**) or `"2"`. v2 is **not** a structural break — same JSON Schema plus a `$comment`. `migrate` only sets `tds_version: "2"`, seeds `meta`, and rewrites bare `static_filters` lists to `{must: [...]}`. |
 | `connections` | yes | Named stores. A tool’s `target.connection` must be one of these keys. |
 | `tools` | no | User-authored tools. Empty is valid if you only enable built-ins. |
 | `defaults` | no | Default embedding model. |
 | `authoring` | no | Allow Claude to *draft* new tools (`define_tool`). Drafts never write this file until `vectorsmith approve`. |
 | `security` | no | Tenancy, auth defaults, RBAC, rate limits. |
 | `observability` | no | Audit, optional tracing, optional Prometheus metrics. Never includes row payloads or credentials. |
-| `profiles` | no | `profiles.enterprise.security.hardening` for `validate --profile enterprise`. |
+| `profiles` | no | `profiles.enterprise.security.hardening`. `validate --profile enterprise` **and** `serve` apply it (meta/authoring off; refuse start if tenancy / limit_max fail). |
 | `meta` | no | Catalog version + deprecated tool list (TDS v2). |
 
 One file = one project = one `serve --name` (one MCP connector) or one `load_tools(...)` source. Two collections you want as separate connectors → two files (this repo: invoices + tickets).
@@ -152,7 +152,7 @@ Every connection also accepts `builtin_tools`, `builtin_defaults`, and `credenti
 
 ### `credentials`
 
-Default `provider: env` — values come from interpolated YAML / `--env-file` (what `serve` and `connect` use today).
+Default `provider: env` — values come from interpolated YAML / `--env-file`.
 
 ```yaml
 connections:
@@ -165,9 +165,24 @@ connections:
         addr: ${VAULT_ADDR:-}
         path: secret/data/qdrant
         role: vectorsmith
+      aws_sm:
+        secret_id: vectorsmith/qdrant
+        region: us-east-1
+      k8s:
+        secret: vectorsmith-qdrant
+        namespace: vectorsmith
 ```
 
-`serve` / `connect` still resolve with the **env** resolver unless you construct `VaultCredentialResolver` in process (`vectorsmith_core.security.credentials`) and pass it into the internal engine. `aws_sm` / `k8s` are accepted on the model; missing secrets still raise `MissingEnvError` with the path. Do not put live vault tokens in YAML.
+`serve` / `connect` / `test` / `introspect` use `build_credential_resolver`:
+
+| Provider | How secrets are read | Validate |
+|---|---|---|
+| `env` | `${VAR}` from `--env-file` / `env=` | — |
+| `vault` | HTTP GET `{VAULT_ADDR}/v1/{path}` with `VAULT_TOKEN` (KV v2 `data.data`) | **VB4040** if `vault.path` missing |
+| `aws_sm` | AWS Secrets Manager JSON (`vectorsmith[creds-aws]`) | **VB4041** if `secret_id` missing |
+| `k8s` | In-cluster `Secret` via the service account | **VB4042** if `k8s.secret` missing |
+
+Secret payload keys must match connection fields (`url`, `api_key`, `dsn`, …). TTL cache is **per process**. Do not put live vault tokens in YAML.
 
 ### Many connections in one file
 
@@ -399,7 +414,7 @@ parameters:
 ```
 
 - `enum` — exact match against the parameter `enum` list; no store round-trip.
-- `directory` — scroll distinct values, then fuzzy-match (`difflib`). Exact `enum` hits skip scroll. Unresolved → empty result, **VB4020**, and `message` with alternatives (not an exception). **VB4021** if the backend cannot scroll (Pinecone). The MCP schema **omits** `enum` when `kind: directory` so typos can reach the resolver.
+- `directory` — scroll distinct values, then fuzzy-match (`difflib`). Exact `enum` hits skip scroll. Unresolved → empty result, **VB4020**, and `message` with alternatives (not an exception). **VB4021** if the backend cannot scroll (Pinecone). The MCP schema **omits** `enum` when `kind: directory` so typos can reach the resolver. Distinct-value cache is **in-process** (TTL `cache_ttl_s`); each replica samples again after expiry. There is no Redis-shared cache today.
 
 ### Operators
 
@@ -536,7 +551,7 @@ observability:
       arg_fields: [password, token, secret]
 ```
 
-CLI: `--audit-log PATH`, `--audit-sink http --audit-url URL`. File sink is mode `0600`.
+CLI: `--audit-log PATH`, `--audit-sink http --audit-url URL`. File sink is mode `0600`. `sink: http` POSTs the JSONL event as the request body. `sink: otlp` POSTs [OTLP HTTP JSON logs](https://opentelemetry.io/docs/specs/otlp/) to `{url}/v1/logs` (collector), not a raw audit document. Multi-project `serve` uses each YAML's audit block unless you pass a CLI `--audit-*` override (then the first file + flags win).
 
 ### `observability.tracing` / `metrics`
 
@@ -554,6 +569,8 @@ observability:
     port: 9090
 ```
 
+When `tracing.enabled` is true, `serve` and `connect` export spans. `exporter: otlp` uses `endpoint` (default `http://localhost:4318` → `/v1/traces`) via `vectorsmith[otel]`. `exporter: console` prints spans. Extra missing → no-op / console fallback.
+
 When metrics are on, HTTP serve exposes `GET /metrics`.
 
 ### `profiles`
@@ -570,7 +587,7 @@ profiles:
         allowed_backends: [qdrant, pgvector]
 ```
 
-Used by `vectorsmith validate --profile enterprise` (same rules as `--enterprise`). See [security hardening](security-hardening.md).
+Used by `vectorsmith validate --profile enterprise` (same rules as `--enterprise`) **and** by `serve` / `connect` / `load_tools`: `disable_authoring` / `disable_meta_tools` override CLI flags; `require_tenancy` / `max_limit_max` / `allowed_backends` refuse start (or raise from `connect`). Multi-project `serve` **unions** every YAML: any file that disables authoring/meta wins; tracing/metrics turn on if any file enables them. See [security hardening](security-hardening.md).
 
 ### `output`
 
@@ -615,6 +632,8 @@ rerank:
     api_key: ${COHERE_API_KEY:-}
     base_url: ${RERANK_URL:-}
 ```
+
+`http` needs `config.base_url`. `cohere` needs `vectorsmith[embed-cohere]`. `cross_encoder` is local (`sentence-transformers`, extra `vectorsmith[rerank-local]`); missing extra is **VB4032** (warning) and a runtime **VB4031** keep-order fallback. Unknown providers no longer fall through to HTTP.
 
 For `search` / `scroll` / `pipeline`, VectorSmith adds a `limit` argument (integer, default/max from `output`). Lookup / count / meta do not get that argument.
 
@@ -772,6 +791,10 @@ Exit codes: `0` ok · `1` warnings with `--strict` (`validate` only) · `2` erro
 | `VB4021` | error | `resolve.kind: directory` on a backend that cannot scroll |
 | `VB4030` | warning | Query expand failed; original query was used |
 | `VB4031` | warning | Rerank failed; vector order was kept |
+| `VB4032` | warning | `rerank.provider: cross_encoder` extra is not installed |
+| `VB4040` | error | `credentials.provider: vault` without `vault.path` |
+| `VB4041` | error | `credentials.provider: aws_sm` without `aws_sm.secret_id` |
+| `VB4042` | error | `credentials.provider: k8s` without `k8s.secret` |
 | `VB2101` / `VB2102` | error | Pipeline missing `retrieve` or empty `expr` |
 | `VB3001`–`VB3005` | warning | Weak descriptions or overlapping built-in search |
 | `VB4001` | warning | Projected field missing on a row |
@@ -779,7 +802,8 @@ Exit codes: `0` ok · `1` warnings with `--strict` (`validate` only) · `2` erro
 | `VB4003` | warning / error | Meta count failed, or connection unhealthy on `--live` |
 | `VB4004` | warning | YAML payload path not seen on live collection fields |
 | `VE001`–`VE007` | error/warning | `validate --enterprise` production preset |
-| `POL000` | error | `--policy` needs the `opa` CLI |
+| `POL000` | error | `--policy` needs the `opa` CLI, or `opa eval` failed |
+| `POL001` | error | Builtin pack or custom Rego `deny` |
 
 JSON Schema for editors lives next to the models: `packages/core/vectorsmith_core/tds/schema_v1.json` and `schema_v2.json` (generated from the Pydantic types).
 

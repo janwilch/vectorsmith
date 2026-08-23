@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import inspect
 import time
 from typing import Any, Protocol
 
@@ -38,23 +40,36 @@ class RedisRateLimiter:
             self._r = client
         else:
             try:
-                import redis
+                import redis.asyncio as redis_async
             except ImportError as exc:
                 raise RuntimeError(
                     "redis extra not installed: pip install 'vectorsmith[auth-redis]'"
                 ) from exc
             if not url:
                 raise RuntimeError("rate_limit.redis_url is required for store: redis")
-            self._r = redis.Redis.from_url(url, decode_responses=True)
+            self._r = redis_async.Redis.from_url(url, decode_responses=True)
+        incr = getattr(type(self._r), "incr", None)
+        self._async = inspect.iscoroutinefunction(incr)
 
-    async def check(self, key: str, limit: int, window_s: int) -> None:
-        rkey = f"vectorsmith:rl:{key}"
+    def _bump_sync(self, rkey: str, window_s: int) -> tuple[int, int]:
         n = int(self._r.incr(rkey))
         if n == 1:
             self._r.expire(rkey, window_s)
-        if limit > 0 and n > limit:
-            ttl = self._r.ttl(rkey)
+        ttl = self._r.ttl(rkey)
+        retry = int(ttl) if isinstance(ttl, int) and ttl > 0 else window_s
+        return n, retry
+
+    async def check(self, key: str, limit: int, window_s: int) -> None:
+        rkey = f"vectorsmith:rl:{key}"
+        if self._async:
+            n = int(await self._r.incr(rkey))
+            if n == 1:
+                await self._r.expire(rkey, window_s)
+            ttl = await self._r.ttl(rkey)
             retry = int(ttl) if isinstance(ttl, int) and ttl > 0 else window_s
+        else:
+            n, retry = await asyncio.to_thread(self._bump_sync, rkey, window_s)
+        if limit > 0 and n > limit:
             raise RateLimited(
                 detail=f"{limit} requests per {window_s}s exceeded",
                 retry_after_s=retry,

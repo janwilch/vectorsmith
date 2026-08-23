@@ -8,6 +8,7 @@ import pytest
 
 from vectorsmith_core.adapters.base import RowBatch, SearchRequest
 from vectorsmith_core.api import CallContext, load_project
+from vectorsmith_core.execute.rerank import clear_cross_encoder_cache, resolve_rerank_provider
 from vectorsmith_core.execute.single_step import execute_single
 
 
@@ -26,6 +27,44 @@ def _src(*, rerank: dict[str, Any] | None = None) -> dict[str, Any]:
         "connections": {"main": {"backend": "qdrant", "url": "http://localhost:6333"}},
         "tools": [tool],
     }
+
+
+def test_cross_encoder_provider_is_distinct() -> None:
+    provider = resolve_rerank_provider("cross_encoder")
+    assert type(provider).__name__ == "_CrossEncoderRerank"
+
+
+@pytest.mark.asyncio
+async def test_cross_encoder_caches_and_uses_thread(monkeypatch: pytest.MonkeyPatch) -> None:
+    created: list[str] = []
+
+    class FakeEnc:
+        def __init__(self, model: str) -> None:
+            created.append(model)
+
+        def predict(self, pairs: list[tuple[str, str]]) -> list[float]:
+            return [float(i) for i in range(len(pairs))]
+
+    import types
+
+    mod = types.ModuleType("sentence_transformers")
+    mod.CrossEncoder = FakeEnc  # type: ignore[attr-defined]
+    monkeypatch.setitem(__import__("sys").modules, "sentence_transformers", mod)
+    clear_cross_encoder_cache()
+    provider = resolve_rerank_provider("cross_encoder")
+    spec = type("S", (), {"model": "unit-ce", "config": {}})()
+    rows = [{"title": "a"}, {"title": "b"}]
+    first = await provider.rerank("q", rows, spec=spec)
+    second = await provider.rerank("q", rows, spec=spec)
+    assert created == ["unit-ce"]
+    assert [r["title"] for r in first] == ["b", "a"]
+    assert [r["title"] for r in second] == ["b", "a"]
+    clear_cross_encoder_cache()
+
+
+def test_unknown_rerank_provider_errors() -> None:
+    with pytest.raises(RuntimeError, match="unknown rerank provider"):
+        resolve_rerank_provider("not-a-provider")
 
 
 def test_rerank_disabled_by_default() -> None:

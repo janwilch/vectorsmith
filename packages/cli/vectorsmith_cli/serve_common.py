@@ -14,6 +14,8 @@ import yaml
 from vectorsmith_core.api import CallContext, Project, draft_tool
 from vectorsmith_core.execute.engine import Engine
 from vectorsmith_core.observe.audit import build_audit_event
+from vectorsmith_core.observe.tracing import current_trace_context
+from vectorsmith_core.security.hardening import hardening_blocks_authoring
 from vectorsmith_core.security.rbac import check_rbac
 
 _AUDIT_LOG = logging.getLogger("vectorsmith.audit")
@@ -60,6 +62,8 @@ def server_instructions(*, include_meta: bool = True) -> str:
 
 
 def authoring_enabled(project: Project, enable_define: bool) -> bool:
+    if hardening_blocks_authoring(project.tds):
+        return False
     return enable_define or bool(project.tds.authoring.define_tool)
 
 
@@ -161,15 +165,14 @@ async def dispatch(
         await _emit_audit(engine, ctx, name, args, started, error=exc)
         raise
     await _emit_audit(engine, ctx, name, args, started, result=result)
-    _CALL_LOG.info(
-        "tool call completed",
-        extra={
-            "request_id": ctx.request_id,
-            "principal": ctx.principal,
-            "tool": name,
-            "latency_ms": int((time.perf_counter() - started) * 1000),
-        },
-    )
+    extra: dict[str, Any] = {
+        "request_id": ctx.request_id,
+        "principal": ctx.principal,
+        "tool": name,
+        "latency_ms": int((time.perf_counter() - started) * 1000),
+    }
+    extra.update(current_trace_context())
+    _CALL_LOG.info("tool call completed", extra=extra)
     return result
 
 

@@ -397,6 +397,9 @@
         "aws_sm": {
           "$ref": "#/$defs/AwsSmSpec"
         },
+        "k8s": {
+          "$ref": "#/$defs/K8sSpec"
+        },
         "provider": {
           "default": "env",
           "enum": [
@@ -676,6 +679,49 @@
         }
       },
       "title": "JWTAuthConfig",
+      "type": "object"
+    },
+    "K8sSpec": {
+      "additionalProperties": true,
+      "properties": {
+        "key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Key"
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Namespace"
+        },
+        "secret": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Secret"
+        }
+      },
+      "title": "K8sSpec",
       "type": "object"
     },
     "MetricsConfig": {

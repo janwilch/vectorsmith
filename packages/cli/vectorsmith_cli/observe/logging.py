@@ -7,7 +7,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-_SAFE_KEYS = ("request_id", "principal", "tool", "latency_ms")
+_SAFE_KEYS = ("request_id", "principal", "tool", "latency_ms", "trace_id", "span_id")
 
 
 class JsonFormatter(logging.Formatter):
@@ -20,6 +20,10 @@ class JsonFormatter(logging.Formatter):
         for key in _SAFE_KEYS:
             if hasattr(record, key):
                 payload[key] = getattr(record, key)
+        if "trace_id" not in payload:
+            from vectorsmith_core.observe.tracing import current_trace_context
+
+            payload.update(current_trace_context())
         if record.exc_info:
             payload["exc"] = self.formatException(record.exc_info)
         return json.dumps(payload, default=str)

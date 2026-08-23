@@ -1,6 +1,6 @@
-# Claim tenancy: JWT `tenant_id` is injected as payload field `tenant` at runtime.
-# Do not also pin static_filters.must.tenant unless this process is one tenant
-# AND you want a compile-time belt (both AND). Static-only: tools.static.yaml.
+# Static tenancy: this process is one tenant. Hidden must-filter; no JWT claim.
+# Use when the deployment (namespace / replica) is already isolated to `acme`.
+# Claim-based multi-tenant HTTP: tools.yaml.
 tds_version: "2"
 meta:
   tool_catalog_version: "2026-08-22"
@@ -15,20 +15,7 @@ defaults:
 
 security:
   tenancy:
-    mode: claim
-    claim: tenant_id
-    path: tenant
-    enforce: strict
-  rbac:
-    enabled: true
-    default_role: viewer
-    role_claim: roles
-    roles:
-      viewer:
-        allow: [search_documents]
-      admin:
-        allow: ["*"]
-    deny_tools: [define_tool]
+    mode: static
   auth:
     mode: jwt
     jwt:
@@ -57,10 +44,13 @@ profiles:
 tools:
   - name: search_documents
     description: >
-      Search tenant documents by meaning and optional status.
+      Search acme documents by meaning and optional status.
       Use when the user asks for files, policies, or knowledge-base hits.
     target: { connection: main, collection: documents }
     query: { param: query, required: true }
+    static_filters:
+      must:
+        - { path: tenant, op: eq, value: acme }
     parameters:
       - { name: status, path: status, dtype: keyword, op: eq }
     output:

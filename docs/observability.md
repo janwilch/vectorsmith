@@ -8,7 +8,7 @@ Hub: [documentation home](index.md).
 
 ## Tracing
 
-Off by default. Extra: `vectorsmith[otel]`.
+Off by default. Extra: `vectorsmith[otel]` (includes the OTLP HTTP exporter). Set `observability.tracing.enabled: true` and `endpoint` (collector, e.g. `http://otel-collector:4318`). `serve` and `connect` call `configure_tracing` for **single-project and multi-project** HTTP, and for stdio. `exporter: otlp` sends `/v1/traces`; `exporter: console` prints spans.
 
 Spans:
 
@@ -29,7 +29,7 @@ vectorsmith_adapter_errors_total{backend,code}
 vectorsmith_rate_limit_hits_total{tool}
 ```
 
-HTTP: `GET /healthz` (liveness), `GET /readyz` (503 if a connection or required embedder is down), `GET /metrics` when metrics are enabled. Routes: [library surface](library.md#http-routes-serve---http).
+HTTP: `GET /healthz` (liveness), `GET /readyz` (503 if a connection, required embedder, or JWT JWKS fetch is down), `GET /metrics` when metrics are enabled. Routes: [library surface](library.md#http-routes-serve---http).
 
 ## Logs
 
@@ -38,4 +38,6 @@ vectorsmith serve tools.yaml --http 127.0.0.1:8080 --auth none \
   --log-format json --log-level info
 ```
 
-Default is text (dev). JSON fields: `level`, `ts`, `request_id`, `principal`, `tool`, `latency_ms`, `msg`. Credentials and embedding vectors are not logged.
+Default is text (dev). JSON fields: `level`, `ts`, `request_id`, `principal`, `tool`, `latency_ms`, `trace_id`, `span_id`, `msg`. `trace_id` / `span_id` come from the current OTel span when tracing is enabled. Credentials and embedding vectors are not logged.
+
+`observability.audit.sink: otlp` posts OTLP HTTP JSON logs to `{url}/v1/logs`. Use `sink: http` for a raw JSONL webhook.

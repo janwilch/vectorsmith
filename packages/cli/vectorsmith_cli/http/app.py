@@ -112,16 +112,30 @@ async def readyz(request: Request) -> Response:
         for name, st in health.items()
     }
     conn_ok = all(st.ok for st in health.values()) if health else True
-    need_embed = live_embed or any(
-        t.plan is not None and t.plan.kind in {"search", "pipeline"}
-        for t in engine.project.tools.values()
-    )
     embed_ok = True
     embed_block: dict[str, Any] | None = None
-    if need_embed:
-        embed_ok, provider = await engine.embed_health()
-        embed_block = {"ok": embed_ok, "provider": provider}
-    ready = conn_ok and embed_ok
+    if router is not None:
+        embed_ok, provider = await router.embed_health(live_embed=live_embed)
+        if provider is not None or live_embed:
+            embed_block = {"ok": embed_ok, "provider": provider}
+    else:
+        from vectorsmith_cli.serve_router import project_needs_embed
+
+        if project_needs_embed(engine, live_embed=live_embed):
+            embed_ok, provider = await engine.embed_health()
+            embed_block = {"ok": embed_ok, "provider": provider}
+    auth_ok = True
+    auth_block: dict[str, Any] | None = None
+    if getattr(request.app.state, "auth_mode", None) == "jwt":
+        provider = getattr(request.app.state, "auth_provider", None)
+        check = getattr(provider, "health", None)
+        if callable(check):
+            try:
+                auth_ok = bool(await check())
+            except Exception:
+                auth_ok = False
+            auth_block = {"ok": auth_ok, "provider": "jwt"}
+    ready = conn_ok and embed_ok and auth_ok
     body: dict[str, Any] = {
         "ready": ready,
         "compiled_tools": compiled,
@@ -129,6 +143,8 @@ async def readyz(request: Request) -> Response:
     }
     if embed_block is not None:
         body["embed"] = embed_block
+    if auth_block is not None:
+        body["auth"] = auth_block
     return JSONResponse(body, status_code=200 if ready else 503)
 
 

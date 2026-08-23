@@ -168,6 +168,8 @@ Store extras (pick one or more): **[vector stores](vector-stores.md)** — `qdra
 | `embed-cohere` | Cohere embed / rerank |
 | `auth-jwt` | `serve --auth jwt` |
 | `auth-redis` | Redis token store and rate-limit store |
-| `otel` | OpenTelemetry SDK for `observability.tracing` |
+| `otel` | OpenTelemetry SDK + OTLP HTTP exporter for `observability.tracing` |
+| `creds-aws` | `credentials.provider: aws_sm` |
+| `rerank-local` | `rerank.provider: cross_encoder` |
 
 Complete inventory: [library surface](library.md). Guides: [integrations](integrations/README.md). Examples: [examples/](https://github.com/kjgpta/vectorsmith/tree/main/examples/README.md).

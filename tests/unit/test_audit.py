@@ -7,13 +7,14 @@ from typing import Any
 
 import pytest
 
-from vectorsmith_cli.observe.sinks import FileSink
+from vectorsmith_cli.observe.sinks import FileSink, OTLPSink, build_audit_sink
 from vectorsmith_cli.serve_common import dispatch
 from vectorsmith_core.adapters.base import RowBatch
 from vectorsmith_core.api import CallContext, EnvCredentialResolver, load_project
 from vectorsmith_core.errors import InvalidArgumentsError
 from vectorsmith_core.execute.engine import Engine
 from vectorsmith_core.observe.audit import redact_args
+from vectorsmith_core.tds.models import AuditConfig
 
 _REDACTED = "[REDACTED]"
 
@@ -136,6 +137,43 @@ async def test_emit_failure_does_not_block(
         drafts_path=tmp_path / "d.yaml",
     )
     assert out["count"] == 1
+
+
+def test_otlp_sink_is_not_http_sink() -> None:
+    sink = build_audit_sink(AuditConfig(enabled=True, sink="otlp", url="http://collector:4318"))
+    assert isinstance(sink, OTLPSink)
+    assert sink.url.endswith("/v1/logs")
+
+
+@pytest.mark.asyncio
+async def test_otlp_sink_posts_otlp_envelope(monkeypatch: pytest.MonkeyPatch) -> None:
+    posted: list[Any] = []
+
+    class _Resp:
+        def raise_for_status(self) -> None:
+            return None
+
+    class _Client:
+        def __init__(self, *a: Any, **k: Any) -> None:
+            _ = a, k
+
+        async def __aenter__(self) -> _Client:
+            return self
+
+        async def __aexit__(self, *a: Any) -> None:
+            return None
+
+        async def post(self, url: str, json: dict[str, Any]) -> _Resp:
+            posted.append((url, json))
+            return _Resp()
+
+    monkeypatch.setattr("httpx.AsyncClient", _Client)
+    sink = OTLPSink("http://collector:4318")
+    await sink.emit({"audit_version": "1", "tool": "search_invoices", "request_id": "r1"})
+    assert posted
+    url, body = posted[0]
+    assert url.endswith("/v1/logs")
+    assert "resourceLogs" in body
 
 
 def test_file_sink_mode_0600(tmp_path: Path) -> None:

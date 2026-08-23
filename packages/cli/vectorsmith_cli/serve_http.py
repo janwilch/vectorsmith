@@ -17,17 +17,37 @@ from vectorsmith_cli.observe.sinks import build_audit_sink
 from vectorsmith_cli.serve_router import (
     ProjectRouter,
     configure_observability,
+    configure_observability_many,
     load_engines,
     project_name,
 )
 from vectorsmith_cli.validate_cmd import _load_env
-from vectorsmith_core.api import EnvCredentialResolver, load_project
+from vectorsmith_core.api import load_project
 from vectorsmith_core.embed.provider import FastEmbedProvider
 from vectorsmith_core.execute.engine import Engine
+from vectorsmith_core.security.credentials import build_credential_resolver
+from vectorsmith_core.security.hardening import (
+    apply_serve_hardening_many,
+    serve_hardening_errors,
+)
 
 
 def localhost_bind(bind: str) -> bool:
     return bind.startswith("127.0.0.1") or bind.startswith("localhost")
+
+
+def _fail_issues(project: Any) -> None:
+    errors = [i for i in project.issues if i.severity == "error"]
+    if errors:
+        for i in errors:
+            print(f"{i.code}: {i.message}", file=sys.stderr)
+        raise SystemExit(2)
+
+
+def _fail_hardening(project: Any) -> None:
+    for msg in serve_hardening_errors(project.tds):
+        print(msg, file=sys.stderr)
+        raise SystemExit(2)
 
 
 def serve_http(
@@ -73,16 +93,15 @@ def serve_http(
         embed: FastEmbedProvider | None = FastEmbedProvider()
     except Exception:
         embed = None
+    resolver = build_credential_resolver(env)
+    cli_audit = audit_log is not None or audit_sink is not None or audit_url is not None
     if len(paths) == 1:
         project = load_project(paths[0], env=env)
-        errors = [i for i in project.issues if i.severity == "error"]
-        if errors:
-            for i in errors:
-                print(f"{i.code}: {i.message}", file=sys.stderr)
-            raise SystemExit(2)
+        _fail_issues(project)
+        _fail_hardening(project)
         engine = Engine(
             project,
-            credential_resolver=EnvCredentialResolver(env),
+            credential_resolver=resolver,
             embed_provider=embed,
             audit_sink=build_audit_sink(
                 project.tds.observability.audit,
@@ -94,21 +113,47 @@ def serve_http(
         router = None
     else:
         default = default_project or project_name(paths[0])
-        engines = load_engines(
-            paths,
-            env=env,
-            embed_provider=embed,
-            audit_sink=build_audit_sink(
+        shared_sink = None
+        make_sink = None
+        if cli_audit:
+            shared_sink = build_audit_sink(
                 load_project(paths[0], env=env).tds.observability.audit,
                 log_path=audit_log,
                 sink_name=audit_sink,
                 url=audit_url,
-            ),
+            )
+        else:
+
+            def make_sink(project: Any) -> Any:
+                return build_audit_sink(project.tds.observability.audit)
+
+        engines = load_engines(
+            paths,
+            env=env,
+            credential_resolver=resolver,
+            embed_provider=embed,
+            audit_sink=shared_sink,
+            make_audit_sink=make_sink,
         )
         router = ProjectRouter(engines, route_claim=route_by_claim, default=default)
         engine = engines[default]
-    configure_observability(engine)
-    yaml_auth = project.tds.security.auth
+        for part in engines.values():
+            _fail_hardening(part.project)
+    if router is not None:
+        configure_observability_many(list(router.engines.values()))
+        enable_define, include_meta = apply_serve_hardening_many(
+            [e.project.tds for e in router.engines.values()],
+            enable_define=enable_define,
+            include_meta=include_meta,
+        )
+    else:
+        configure_observability(engine)
+        enable_define, include_meta = apply_serve_hardening_many(
+            [engine.project.tds],
+            enable_define=enable_define,
+            include_meta=include_meta,
+        )
+    yaml_auth = engine.project.tds.security.auth
     jwt_cfg = merge_jwt_cfg(
         yaml_auth.jwt, issuer=jwt_issuer, audience=jwt_audience, jwks_url=jwks_url
     )

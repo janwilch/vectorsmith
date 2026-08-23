@@ -12,9 +12,10 @@ import uuid
 from pathlib import Path
 
 from vectorsmith_cli.validate_cmd import _load_env
-from vectorsmith_core.api import CallContext, EnvCredentialResolver, load_project
+from vectorsmith_core.api import CallContext, load_project
 from vectorsmith_core.embed.provider import FastEmbedProvider
 from vectorsmith_core.execute.engine import Engine
+from vectorsmith_core.security.credentials import build_credential_resolver
 
 
 def run_test(
@@ -53,7 +54,7 @@ def run_test(
         except Exception:
             embed = None
         engine = Engine(
-            project, credential_resolver=EnvCredentialResolver(env), embed_provider=embed
+            project, credential_resolver=build_credential_resolver(env), embed_provider=embed
         )
         try:
             result = await engine.call(

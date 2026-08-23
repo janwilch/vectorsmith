@@ -87,4 +87,15 @@ class JWTProvider:
     async def health(self) -> bool:
         if self._jwks is not None:
             return bool(self._jwks.get("keys"))
-        return bool(self.cfg.jwks_url)
+        if not self.cfg.jwks_url:
+            return False
+        try:
+            import httpx
+
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                resp = await client.get(self.cfg.jwks_url)
+                resp.raise_for_status()
+                data = resp.json()
+            return bool(isinstance(data, dict) and data.get("keys"))
+        except Exception:
+            return False

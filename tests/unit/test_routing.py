@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from vectorsmith_cli.serve_router import ProjectRouter, load_engines, project_name
-from vectorsmith_core.api import CallContext, EnvCredentialResolver
+from vectorsmith_core.api import CallContext, EnvCredentialResolver, Project
 from vectorsmith_core.errors import InvalidArgumentsError
 from vectorsmith_core.execute.engine import Engine
 
@@ -75,6 +75,23 @@ def test_tool_name_collision_exits(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as exc:
         load_engines([a, b], env={}, credential_resolver=EnvCredentialResolver({}))
     assert exc.value.code == 2
+
+
+def test_per_project_audit_sink(tmp_path: Path) -> None:
+    a = tmp_path / "internal.yaml"
+    b = tmp_path / "external.yaml"
+    _write(a, "internal", "search_internal")
+    _write(b, "external", "search_external")
+    sinks: dict[str, str] = {}
+
+    def make_sink(project: Project) -> str:
+        name = next(iter(project.tools))
+        sinks[name] = f"sink-{name}"
+        return sinks[name]
+
+    engines = load_engines([a, b], env={}, make_audit_sink=make_sink)
+    assert engines["internal"].audit_sink == "sink-search_internal"
+    assert engines["external"].audit_sink == "sink-search_external"
 
 
 def test_router_default_engine_is_engine(tmp_path: Path) -> None:

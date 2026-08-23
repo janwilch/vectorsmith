@@ -50,11 +50,11 @@ def run_validate(
     if live:
         import asyncio
 
-        from vectorsmith_core.api import EnvCredentialResolver
         from vectorsmith_core.execute.engine import Engine
+        from vectorsmith_core.security.credentials import build_credential_resolver
 
         async def _live() -> list:
-            engine = Engine(project, credential_resolver=EnvCredentialResolver(env))
+            engine = Engine(project, credential_resolver=build_credential_resolver(env))
             try:
                 return await engine.validate_live(live_embed=live_embed)
             finally:
