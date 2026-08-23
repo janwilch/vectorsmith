@@ -18,6 +18,8 @@ We aim to acknowledge reports within 7 days.
 - Audit events never include row payloads or connection credentials. Named arg fields (default `password`, `token`, `secret`) are replaced with `[REDACTED]`.
 - `--env-file` for the CLI (`validate` / `serve` / `test` interpolate **only** keys from that file).
 - `load_tools` / `connect` merge `os.environ`, then `env=`, then `env_file=`.
+- `connections.*.credentials.provider` (`vault` / `aws_sm` / `k8s`) fetches at runtime; missing config is **VB4040**–**VB4042**. Do not put live vault tokens in YAML.
+- `profiles.enterprise` hardening refuses `serve` / `connect` when tenancy, `limit_max`, or allowed backends fail.
 
 ## `run_tool` (MCP serve)
 
@@ -34,4 +36,4 @@ Serve with `--no-meta-tools` to omit both dispatchers. That does not loosen name
 
 ## Supported versions
 
-The latest `0.1.x` release on the default branch is what we patch.
+The latest `0.2.x` release on the default branch is what we patch.

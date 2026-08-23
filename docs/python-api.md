@@ -28,7 +28,7 @@ vs = connect(
 )
 ```
 
-Returns [`BoundTools`](#boundtools). Compiles each YAML in-process (no `serve` subprocess). Duplicate tool names: last file wins for `call()`.
+Returns [`BoundTools`](#boundtools). Compiles each YAML in-process (no `serve` subprocess). Duplicate tool names: last file wins for `call()`. `profiles.enterprise` hardening applies the same refuse rules as `serve` (authoring/meta, tenancy, `limit_max`, allowed backends). `observability.tracing` is configured when any loaded file enables it. Credential providers (`vault` / `aws_sm` / `k8s`) resolve at first use.
 
 ---
 

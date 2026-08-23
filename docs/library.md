@@ -75,14 +75,14 @@ Every flag: [CLI](cli.md).
 | Method | Path | When |
 |---|---|---|
 | `GET` | `/healthz` | Always `{"ok": true}` (liveness) |
-| `GET` | `/readyz` | **503** if any connection is down, or embed health fails when search tools exist / `--live-embed` |
+| `GET` | `/readyz` | **503** if any connection is down, a required embedder fails (every project with search/pipeline tools, or `--live-embed`), or JWT JWKS cannot be fetched |
 | `GET`/`POST` | `/mcp` | MCP. `POST` is the tool path |
 | `GET` | `/metrics` | Only if `observability.metrics.enabled` |
 | `GET` | `/.well-known/oauth-protected-resource` | Builtin OAuth |
 | `GET` | `/.well-known/oauth-authorization-server` | Builtin OAuth |
 | `GET`/`POST` | `/oauth/authorize` · `/oauth/token` · `/oauth/register` · `/oauth/revoke` | Builtin OAuth |
 
-Auth: `--auth none` (loopback only) · `builtin` (needs `https` `--public-url`) · `jwt` · `api_key`.
+Auth: `--auth none` (loopback only) · `builtin` (needs `https` `--public-url`) · `jwt` (JWKS reachability is part of `/readyz`) · `api_key`.
 
 During SIGTERM drain, new `POST /mcp` returns **503** `shutting_down`. Rate limits → **429**. Tool deadline → **504**. RBAC deny → **403**. Auth failure → **401**.
 
@@ -132,6 +132,8 @@ Issue codes (`VBxxxx`, `VE00x`, `POL000`): [YAML codes](tools-yaml-reference.md#
 - Not write tools (no upsert / delete / create-collection)
 - Not a second copy of your vector database
 - `Engine` is not a public SDK
+
+**0.2.0** is the production HTTP server: JWT, tenancy, RBAC, credential resolvers, audit / OTel / Prometheus, Redis rate limits, and enterprise hardening at `serve` / `connect`.
 
 ---
 

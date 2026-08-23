@@ -2,7 +2,9 @@
 
 Hub: [documentation home](index.md). Hardening checklist: [security-hardening.md](security-hardening.md).
 
-VectorSmith is a **compiler**, not an identity provider or access plane. You own auth, host choice, and the store. This page is the security model the compiler and `serve` enforce when you turn the knobs on.
+VectorSmith is a **compiler**, not an identity provider or access plane. You own auth, host choice, and the store. This page is the security model the compiler and `serve` / `connect` enforce when you turn the knobs on.
+
+**0.2.0** applies every layer below at process start. `validate --enterprise` is the CI gate; a non-compliant YAML now also refuses `serve` and `connect`.
 
 ## Layers
 
@@ -41,13 +43,13 @@ Copy-paste: [`examples/enterprise/tools.yaml`](https://github.com/kjgpta/vectors
 
 ## Auth and RBAC
 
-HTTP `--auth jwt` validates RS256 via JWKS (`vectorsmith[auth-jwt]`). `--auth api_key` reads a keys file. `--auth-store redis` shares builtin OAuth tokens across replicas.
+HTTP `--auth jwt` validates RS256 via JWKS (`vectorsmith[auth-jwt]`). `--auth api_key` reads a keys file. `--auth-store redis` shares builtin OAuth tokens across replicas. `GET /readyz` fetches JWKS so a down IdP takes the replica out of rotation.
 
 `security.rbac.deny_tools` wins over `allow: ["*"]`. Checks apply to the **inner** name of `run_tool`.
 
 ## Audit
 
-JSONL: `request_id`, `principal`, tool, connection, redacted args, result count, latency. Sink failures do not block the call. Default redact: `password`, `token`, `secret`.
+JSONL: `request_id`, `principal`, tool, connection, redacted args, result count, latency. Sinks: `file` (mode 0600), `http` (raw JSONL POST), `otlp` (OTLP HTTP JSON logs). Sink failures do not block the call. Default redact: `password`, `token`, `secret`. Multi-project `serve` uses each YAML’s audit block unless you pass `--audit-*`.
 
 ## Credentials
 
@@ -62,7 +64,17 @@ JSONL: `request_id`, `principal`, tool, connection, redacted args, result count,
 
 Inject a `fetch` callable on `build_credential_resolver` for tests. Details: [tools.yaml → credentials](tools-yaml-reference.md#credentials).
 
-## Reference YAML
+## Rate limits
+
+`security.rate_limit` is off by default. Per-principal / per-tool / embed windows. In-memory or `store: redis` (`vectorsmith[auth-redis]`; async client). HTTP **429** with `retry_after_s`.
+
+## Production checklist
+
+1. `validate --enterprise --strict` in CI
+2. `serve --http` with `--auth jwt` or `api_key` (never `--auth none` on a public bind)
+3. `GET /readyz` as the readiness probe; `GET /healthz` for liveness
+4. `--log-format json` and `observability.audit.enabled`
+5. Helm / two replicas + Redis if you use builtin OAuth — [Kubernetes](deploy/kubernetes.md)
 
 Directory parameter resolve caches in-process only (see [tools.yaml → resolve](tools-yaml-reference.md#parametersresolve)).
 

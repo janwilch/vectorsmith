@@ -113,7 +113,11 @@ The process **cwd**. Set `cwd` in Desktop/Codex. Cap 10 pending; 30-day expiry.
 
 ### Which pip extras exist?
 
-Stores, agent SDKs, `embed-openai` / `embed-cohere`, `auth-jwt` / `auth-redis`, `otel`. Inventory: [library surface](library.md).
+Stores, agent SDKs, `embed-openai` / `embed-cohere`, `auth-jwt` / `auth-redis`, `otel`, `creds-aws`, `rerank-local`. Inventory: [library surface](library.md).
+
+### Is HTTP `serve` production-ready?
+
+Yes as of **0.2.0**. Use `--auth jwt` or `api_key` on a public bind, `GET /readyz` as the readiness probe, `--log-format json`, and `validate --enterprise --strict` in CI. Chart: [Kubernetes](deploy/kubernetes.md). `--auth none` remains loopback-only.
 
 ## Still stuck
 

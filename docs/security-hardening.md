@@ -19,7 +19,7 @@ vectorsmith validate tools.yaml --policy-builtin enterprise,pci,soc2
 | VE006 | Builtin auth on a public URL without HTTPS (serve-time) |
 | VE007 | `defaults.embedding.provider: fastembed` (warning) |
 
-`--profile enterprise` and a present `profiles.enterprise` block merge `security.hardening` at **validate, serve, and `connect`/`load_tools`**: `disable_authoring` / `disable_meta_tools` win over `--enable-define` / `--meta-tools`; `require_tenancy`, `max_limit_max`, and `allowed_backends` refuse start. Multi-project HTTP unions every file's flags (strictest authoring/meta; tracing/metrics if any project enables them).
+`--profile enterprise` and a present `profiles.enterprise` block merge `security.hardening` at **validate, serve, and `connect`/`load_tools`** (0.2.0: this is a runtime refuse, not a CI-only lint). `disable_authoring` / `disable_meta_tools` win over `--enable-define` / `--meta-tools`; `require_tenancy`, `max_limit_max`, and `allowed_backends` refuse start. Multi-project HTTP unions every file's flags (strictest authoring/meta; tracing/metrics if any project enables them).
 
 ## Checklist
 

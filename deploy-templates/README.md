@@ -6,7 +6,7 @@ HTTP MCP (`vectorsmith serve --http`) for claude.ai or any remote MCP client. St
 
 `--watch` is stdio-only; a containerized HTTP server does not reload YAML until you restart the process.
 
-`--auth none` is localhost-only. Public bind requires `--auth builtin --public-url https://…`. The MCP route is `/mcp`; liveness is `GET /healthz`.
+`--auth none` is localhost-only. Public bind requires `--auth jwt`, `api_key`, or `--auth builtin --public-url https://…`. The MCP route is `/mcp`. Liveness is `GET /healthz`. Readiness is `GET /readyz` (503 if a connection, required embedder, or JWT JWKS is down).
 
 | File | Use |
 |---|---|

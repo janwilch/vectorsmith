@@ -45,7 +45,7 @@ defaults:
 
 Default JSON body is `{model, input: [texts]}`. Default vector path is OpenAI-shaped `data[*].embedding`. `dims` is required for unknown model ids (**VB2018** without it on `--live`).
 
-**VB2019** if the provider extra is missing. `validate --live-embed` smoke-tests the embedder. HTTP `GET /readyz` checks provider health when search tools exist or you pass `--live-embed`.
+**VB2019** if the provider extra is missing. `validate --live-embed` smoke-tests the embedder. HTTP `GET /readyz` checks provider health on **every** loaded project that has search/pipeline tools, or when you pass `--live-embed`.
 
 ### Query expansion
 

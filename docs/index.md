@@ -2,7 +2,7 @@
 
 **Your vector database, forged into tools an agent can actually use.**
 
-Write a `tools.yaml`. VectorSmith compiles it into typed, tenant-guarded tools — then you either import them in Python or serve them over MCP.
+Write a `tools.yaml`. VectorSmith compiles it into typed, tenant-guarded tools — then you either import them in Python or serve them over MCP (stdio or production HTTP).
 
 ```bash
 pip install "vectorsmith[qdrant]"
@@ -18,7 +18,8 @@ pip install "vectorsmith[qdrant]"
 | You are building… | Use |
 |---|---|
 | A **Python agent** (LangChain, LangGraph, OpenAI Agents, Anthropic SDK) | [`load_tools` / `connect`](python-api.md) |
-| A **chat / IDE host** (Claude Desktop, Claude Code, Codex, Cursor) | [`vectorsmith serve`](cli.md) as MCP |
+| A **chat / IDE host** (Claude Desktop, Claude Code, Codex, Cursor) | [`vectorsmith serve`](cli.md) (MCP stdio) |
+| A **remote / Kubernetes MCP server** (claude.ai, gateways) | [`serve --http`](quickstart-selfhost.md) with JWT / probes / OTel |
 
 Same file either way. The agent never sees the store URL, the API key, or hidden tenant filters.
 
@@ -51,7 +52,7 @@ Same file either way. The agent never sees the store URL, the API key, or hidden
 | [tools.yaml](tools-yaml-reference.md) | Every field, operators, pipelines, `VBxxxx` |
 | [Library surface](library.md) | Extras, HTTP routes, exceptions, public imports |
 | [CLI](cli.md) | `init` · `validate` · `serve` · `test` · `introspect` · `migrate` · `drafts` · `approve` · `auth` |
-| [Enterprise](enterprise.md) | Auth, tenancy, RBAC, audit |
+| [Enterprise](enterprise.md) | JWT, tenancy, RBAC, credentials, audit, rate limits |
 | [Security hardening](security-hardening.md) | `--enterprise` checklist |
 | [Embedding providers](embedding-providers.md) | FastEmbed, OpenAI, Azure, Cohere, HTTP |
 | [Observability](observability.md) | Audit, traces, metrics, JSON logs |
@@ -82,12 +83,14 @@ pip install "vectorsmith[qdrant,anthropic]"
 
 Store extras: see [vector stores](vector-stores.md) (`qdrant` · `pgvector` · `chroma` · `pinecone` · `weaviate` · `milvus`).
 
-Also: `embed-openai` · `embed-cohere` · `auth-jwt` · `auth-redis` · `otel`. Full list: [library surface](library.md).
+Also: `embed-openai` · `embed-cohere` · `auth-jwt` · `auth-redis` · `otel` · `creds-aws` · `rerank-local`. Full list: [library surface](library.md).
 
 ---
 
 ## Status
 
-**0.1.4.** Read-only tools from YAML. Application code uses `from vectorsmith import load_tools` or `connect` — do not import `Engine`.
+**0.2.0** — production HTTP MCP server. Read-only tools from YAML. `serve --http` applies tenancy, RBAC, credential resolvers, audit, tracing, metrics, rate limits, and `profiles.enterprise` at process start. Application code uses `from vectorsmith import load_tools` or `connect` — do not import `Engine`.
+
+Changelog: [0.2.0](changelog.md).
 
 Source: [github.com/kjgpta/vectorsmith](https://github.com/kjgpta/vectorsmith).

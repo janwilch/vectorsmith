@@ -103,6 +103,8 @@ Two processes, two Connectors. One Python process can `load_tools` both files.
 
 ## Next
 
+- [HTTP / claude.ai](quickstart-selfhost.md) for `serve --http` (JWT, `/readyz`, OTel)
+- [Enterprise](enterprise.md) for tenancy, RBAC, credentials, audit
 - [FAQ](faq.md) if something fails (Desktop **Server disconnected**, missing `${VAR}`, HTTP auth)
 - [CLI reference](cli.md) for every flag
 - [Architecture](architecture.md) for what compiles where

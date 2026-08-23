@@ -58,7 +58,7 @@ uv run vectorsmith validate examples/enterprise/tools.yaml --enterprise --strict
   --env-file examples/enterprise/.env.example
 ```
 
-`--enterprise` warns **VE007** while the file uses FastEmbed (swap to a remote embedder for a clean gate). Docs: [enterprise](../docs/enterprise.md), [hardening](../docs/security-hardening.md).
+`--enterprise` warns **VE007** while the file uses FastEmbed (swap to a remote embedder for a clean gate). The same `profiles.enterprise` block refuses `serve` / `connect` if tenancy or limits fail. Docs: [enterprise](../docs/enterprise.md), [hardening](../docs/security-hardening.md), [HTTP](../docs/quickstart-selfhost.md).
 
 ## Agent frameworks (in-process `load_tools`)
 

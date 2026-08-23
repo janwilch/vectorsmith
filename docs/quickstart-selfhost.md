@@ -37,4 +37,19 @@ Also served: `/.well-known/oauth-protected-resource`, `/.well-known/oauth-author
 
 Add the connector in claude.ai (URL `https://vb.example.com/mcp`). Add Slack/GitHub/etc. as **separate** connectors — see [coexistence.md](coexistence.md).
 
-Container / k8s / Cloud Run / Fly: [deploy-templates/](https://github.com/kjgpta/vectorsmith/blob/main/deploy-templates/README.md).
+## JWT (production)
+
+```bash
+pip install "vectorsmith[qdrant,auth-jwt,otel]"
+
+vectorsmith serve tools.yaml --http 0.0.0.0:8080 --auth jwt \
+  --jwks-url https://auth.example.com/.well-known/jwks.json \
+  --jwt-issuer https://auth.example.com --jwt-audience vectorsmith \
+  --log-format json --live-embed --shutdown-grace-s 30
+```
+
+`GET /healthz` is liveness. `GET /readyz` is **503** if a connection is down, a required embedder fails, or JWKS cannot be fetched. `GET /metrics` when `observability.metrics.enabled`. YAML tenancy / RBAC / audit / rate limits / `profiles.enterprise` apply at start — [enterprise](enterprise.md).
+
+`--auth api_key` reads `--api-keys-file` (`{ "key": { "principal", "claims" } }`). Two replicas sharing builtin OAuth need `--auth-store redis` (`vectorsmith[auth-redis]`).
+
+Container / k8s / Cloud Run / Fly: [deploy-templates/](https://github.com/kjgpta/vectorsmith/blob/main/deploy-templates/README.md) · [Kubernetes](deploy/kubernetes.md).

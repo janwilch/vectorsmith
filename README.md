@@ -10,11 +10,12 @@ Write a `tools.yaml`. VectorSmith compiles it into typed, tenant-guarded tools �
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](pyproject.toml)
-[![TDS](https://img.shields.io/badge/tools.yaml-TDS%20v1-7C3AED.svg)](docs/tools-yaml-reference.md)
+[![TDS](https://img.shields.io/badge/tools.yaml-TDS%20v1%20%2B%20v2-7C3AED.svg)](docs/tools-yaml-reference.md)
 [![MCP](https://img.shields.io/badge/MCP-stdio%20%2B%20HTTP-111827.svg)](docs/integrations/README.md)
+[![Version](https://img.shields.io/badge/version-0.2.0-0F766E.svg)](CHANGELOG.md)
 [![Docs](https://img.shields.io/badge/docs-kjgpta.github.io-0F766E.svg)](https://kjgpta.github.io/vectorsmith/)
 
-[What it is](#why-this-exists) · [How it works](#how-it-works) · [Write YAML](#write-a-tool-not-a-prompt) · [Python](#in-your-agent-python) · [Claude / Codex / Cursor](#in-claude-codex-cursor) · [Try it](#try-it) · [**Docs**](https://kjgpta.github.io/vectorsmith/)
+[What it is](#why-this-exists) · [How it works](#how-it-works) · [Write YAML](#write-a-tool-not-a-prompt) · [Python](#in-your-agent-python) · [Claude / Codex / Cursor](#in-claude-codex-cursor) · [Production HTTP](#production-http-server) · [Try it](#try-it) · [**Docs**](https://kjgpta.github.io/vectorsmith/)
 
 </div>
 
@@ -225,6 +226,39 @@ Copy-paste snippets: [`examples/mcp_hosts/`](examples/mcp_hosts/). Slack, GitHub
 
 ---
 
+## Production HTTP server
+
+`0.2.0` is the production HTTP cut. `vectorsmith serve --http` is Streamable HTTP MCP (`POST /mcp`) for claude.ai, gateways, and Kubernetes. Every `security.*` / `observability.*` / credential / `profiles.enterprise` knob in YAML is applied at process start — the same contract `connect` / `load_tools` use in-process.
+
+```bash
+pip install "vectorsmith[qdrant,auth-jwt,otel]"
+
+vectorsmith serve tools.yaml --http 0.0.0.0:8080 --auth jwt \
+  --jwks-url https://auth.example.com/.well-known/jwks.json \
+  --jwt-issuer https://auth.example.com --jwt-audience vectorsmith \
+  --log-format json --live-embed
+```
+
+Localhost demo: `--http 127.0.0.1:8080 --auth none`. `--auth none` off loopback exits `3`. Builtin OAuth (`--auth builtin`, the HTTP default) needs `https://` `--public-url`.
+
+| Concern | How |
+|---|---|
+| Who is calling | `--auth jwt` (JWKS / RS256) · `api_key` · `builtin` OAuth. Extra `vectorsmith[auth-jwt]` |
+| Tenant isolation | Hidden `static_filters` **and/or** `security.tenancy` (`claim` / `header`). Pick one layer unless you intend both |
+| Which tools | `security.rbac` (`roles`, `deny_tools`). Applied on the inner name of `run_tool` |
+| Secrets | `connections.*.credentials.provider`: `env` · `vault` · `aws_sm` · `k8s`. Extra `vectorsmith[creds-aws]` |
+| Quotas | `security.rate_limit` (off by default). In-memory or Redis (`vectorsmith[auth-redis]`). HTTP **429** |
+| Health | `GET /healthz` (liveness). `GET /readyz` **503** if a connection, required embedder, or JWT JWKS is down |
+| Observability | `--log-format json` (`request_id`, `trace_id`, `span_id`). `observability.tracing` → OTLP (`vectorsmith[otel]`). `GET /metrics`. Audit file / HTTP / OTLP |
+| Hardening | `profiles.enterprise` + `validate --enterprise --strict`. Refuses `serve` / `connect` if tenancy / limits / backends fail |
+| Search quality | Pluggable embedders, `query.expand`, `tool.rerank` (`http` / `cohere` / local `cross_encoder`) |
+| Many catalogs | Extra YAML args, `--route-by-claim`, `--default-project`. Duplicate tool names fail at start |
+| Drain | `--shutdown-grace-s` (default 30). New `POST /mcp` is **503** while draining |
+
+Reference catalog: [`examples/enterprise/`](examples/enterprise/). Chart and probes: [Kubernetes](docs/deploy/kubernetes.md). Full model: [enterprise](docs/enterprise.md) · [hardening](docs/security-hardening.md) · [observability](docs/observability.md).
+
+---
+
 ## Stores
 
 `backend` on a connection is one of six shipped adapters. Full matrix (extras, hybrid, nested paths): **[vector stores](docs/vector-stores.md)**.
@@ -232,6 +266,19 @@ Copy-paste snippets: [`examples/mcp_hosts/`](examples/mcp_hosts/). Slack, GitHub
 `qdrant` · `pgvector` · `chroma` · `pinecone` · `weaviate` · `milvus`
 
 pgvector can run in **table mode** (no vector column) for lookup / count / scroll. Hybrid search is capability-gated (Qdrant / Weaviate / Milvus / Pinecone) and checked with `validate --live`.
+
+Production extras (install what you turn on in YAML):
+
+| Extra | For |
+|---|---|
+| `auth-jwt` | `serve --auth jwt` |
+| `auth-redis` | Shared OAuth tokens and Redis rate limits |
+| `otel` | OTLP traces from `observability.tracing` |
+| `creds-aws` | `credentials.provider: aws_sm` |
+| `embed-openai` / `embed-cohere` | Hosted embedders (and Cohere rerank) |
+| `rerank-local` | `rerank.provider: cross_encoder` |
+
+Full inventory: [library surface](docs/library.md).
 
 ---
 
@@ -265,9 +312,9 @@ Tickets are a second file / second MCP name: `tools.tickets.yaml` → `--name ti
 | Command | Does |
 |---|---|
 | `init` | Write a starter `tools.yaml` + `.env.example` |
-| `validate` | Compile + lint. `--live` pings the store. `--strict` fails on warnings |
+| `validate` | Compile + lint. `--live` pings the store. `--live-embed` smoke-tests the embedder. `--enterprise` / `--policy` / `--policy-builtin` for production gates. `--strict` fails on warnings |
 | `test` | Call one compiled tool without serving |
-| `serve` | MCP stdio (Desktop / Codex / Cursor; `--watch` on by default) or `--http HOST:PORT` (no watch). Default HTTP `--auth` is `builtin` (needs `https` `--public-url`). Localhost HTTP: `--auth none`. |
+| `serve` | MCP stdio (Desktop / Codex / Cursor; `--watch` on by default) or `--http HOST:PORT` (no watch). HTTP `--auth`: `builtin` (needs `https` `--public-url`) · `jwt` · `api_key` · `none` (loopback only). `--live-embed` includes the embedder on `/readyz`. |
 | `introspect` | Collection / field metadata to `--out` (default `schema.json`). Requires `--connection`. |
 | `drafts` / `approve` | `drafts list\|reject NAME`. `approve NAME [--file tools.yaml]` promotes into that file. Drafts live in `./tools.drafts.yaml` (process cwd). |
 | `auth` | `rotate-secret` \| `revoke` for builtin HTTP OAuth |
@@ -290,8 +337,11 @@ Tickets are a second file / second MCP name: `tools.tickets.yaml` → `--name ti
 | Look up a CLI flag | [CLI](docs/cli.md) |
 | See every extra, route, and exception | [Library surface](docs/library.md) |
 | Call tools from Python | [Python API](docs/python-api.md) |
-| JWT / tenancy / RBAC / audit | [Enterprise](docs/enterprise.md) |
-| Helm / probes | [Kubernetes](docs/deploy/kubernetes.md) |
+| JWT / tenancy / RBAC / credentials / audit | [Enterprise](docs/enterprise.md) |
+| `validate --enterprise` at serve time | [Security hardening](docs/security-hardening.md) |
+| Traces, metrics, JSON logs, audit sinks | [Observability](docs/observability.md) |
+| Embedders and rerank | [Embedding providers](docs/embedding-providers.md) |
+| Helm / probes / Redis auth store | [Kubernetes](docs/deploy/kubernetes.md) |
 | Fix Desktop disconnect / env / HTTP auth | [FAQ](docs/faq.md) |
 | Copy a host config | [examples/mcp_hosts](examples/mcp_hosts/) |
 | See agent apps | [examples/](examples/README.md) |

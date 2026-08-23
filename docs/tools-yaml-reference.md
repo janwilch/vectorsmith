@@ -9,6 +9,7 @@ The file is a **Tool Definition Schema (TDS)**. It declares:
 1. How to reach a data store (`connections`)
 2. Which **read-only** tools an agent may call (`tools`)
 3. Guardrails the model never sees (`static_filters`, limits, field projection)
+4. Optional production knobs (`security`, `observability`, `profiles.enterprise`) — applied at `serve` / `connect`, not only `validate`
 
 You do not write Python for those tools. VectorSmith compiles the YAML into MCP schemas (for Claude / Codex / Cursor) or in-process tools (`load_tools` / `connect`). Same file, both paths — [integrations](integrations/README.md).
 
@@ -750,6 +751,10 @@ vectorsmith validate tools.yaml --live --env-file .env
 # Fail CI on warnings too
 vectorsmith validate tools.yaml --strict --json
 
+# Production gate (VE001–VE007) + optional OPA packs
+vectorsmith validate tools.yaml --enterprise --strict --env-file .env
+vectorsmith validate tools.yaml --policy-builtin enterprise,pci,soc2
+
 # Run one compiled tool without serving
 vectorsmith test tools.yaml search_invoices \
   --args '{"query":"Globex invoice","limit":3}' --env-file .env
@@ -814,7 +819,7 @@ JSON Schema for editors lives next to the models: `packages/core/vectorsmith_cor
 - [Library surface](library.md) — extras, HTTP routes, exceptions
 - [Vector stores](vector-stores.md) — Qdrant, pgvector, Chroma, Pinecone, Weaviate, Milvus
 - [Embedding providers](embedding-providers.md)
-- [Enterprise](enterprise.md) · [Security hardening](security-hardening.md)
+- [Enterprise](enterprise.md) · [Security hardening](security-hardening.md) · [Observability](observability.md)
 - [Use in agents](use-in-agents.md) — `load_tools` vs `serve`
 - [Integrations](integrations/README.md) — Claude, Codex, LangGraph, …
 - [Coexistence](coexistence.md) — this file next to Slack / GitHub MCP

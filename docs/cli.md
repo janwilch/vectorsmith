@@ -42,7 +42,7 @@ Compile, interpolate, synthesize built-ins, collect `VBxxxx` / `VE00x` / policy 
 | `--strict` | Warnings → exit `1` |
 | `--env-file` | Keys used for `${VAR}` under `connections` and embedding `config` |
 | `--enterprise` / `--profile enterprise` | Production-safe preset (`VE001`–`VE007`) |
-| `--policy FILE.rego` | Custom OPA policy (`POL000` if `opa` is missing) |
+| `--policy FILE.rego` | Run `opa eval` with the compiled TDS as input JSON (`POL000` if `opa` is missing; each `deny` is `POL001`) |
 | `--policy-builtin` | Comma list: `enterprise`, `pci`, `soc2` |
 
 Exit: `0` ok · `1` warnings with `--strict` · `2` errors.
@@ -112,14 +112,15 @@ vectorsmith serve tools.yaml --http 0.0.0.0:8080 --auth jwt \
 | `--jwt-issuer` / `--jwt-audience` / `--jwks-url` | | JWT mode (or `security.auth.jwt` in YAML). Extra: `vectorsmith[auth-jwt]` |
 | `--api-keys-file` | | JSON `{ "key": { "principal", "claims" } }` for `--auth api_key` |
 | `--auth-store` / `--redis-url` | `sqlite` | Builtin OAuth token store. `redis` needs `vectorsmith[auth-redis]` |
-| `--audit-log` / `--audit-sink` / `--audit-url` | | JSONL audit events (file is mode 0600) |
+| `--audit-log` / `--audit-sink` / `--audit-url` | | JSONL audit events (file is mode 0600). Override per-YAML `observability.audit` |
 | `--route-by-claim` / `--default-project` | | Multi-YAML routing (HTTP). Tool names must be unique across files |
 | `--shutdown-grace-s` | `30` | Drain in-flight MCP calls on SIGTERM; new `/mcp` POSTs get 503 |
-| `--log-format` / `--log-level` | `text` / `info` | `json` adds `request_id` / `principal` / `tool` / `latency_ms` |
+| `--log-format` / `--log-level` | `text` / `info` | `json` adds `request_id` / `principal` / `tool` / `latency_ms` / `trace_id` / `span_id` |
+| `--live-embed` | off | Include embed-provider health on `GET /readyz` even when the YAML has no search tools |
 
 `--watch` is **ignored** on HTTP. Restart after YAML edits. `--meta-tools` / `--no-meta-tools` and `--enable-define` apply the same as stdio.
 
-`GET /healthz` → `{"ok": true}`. `GET /readyz` → 503 if any connection (or embed, when required) is down. `GET /metrics` when `observability.metrics.enabled`. `builtin` OAuth: PKCE, DCR, tokens in `~/.vectorsmith/authstate.db` (mode 0600). First start writes the access secret once to `~/.vectorsmith/access-secret.once` (mode 0600) — it is not printed.
+`GET /healthz` → `{"ok": true}` (liveness). `GET /readyz` → 503 if any connection is down, a required embedder fails (every loaded project with search/pipeline tools, or `--live-embed`), or `--auth jwt` cannot fetch JWKS. `GET /metrics` when `observability.metrics.enabled`. `profiles.enterprise` and `validate --enterprise` rules refuse start (same as `connect`). `builtin` OAuth: PKCE, DCR, tokens in `~/.vectorsmith/authstate.db` (mode 0600). First start writes the access secret once to `~/.vectorsmith/access-secret.once` (mode 0600) — it is not printed.
 
 Exit: `2` if `builtin` lacks `https` `--public-url`, or jwt/api_key is missing JWKS/keys · `3` if `--auth none` is not loopback.
 

@@ -40,7 +40,9 @@ Codex uses TOML instead of JSON. Full copy-paste for every host and framework: *
 | `vectorsmith[openai-agents]` | `from vectorsmith.openai_agents import load_tools` |
 | `vectorsmith[anthropic]` | `from vectorsmith.anthropic import load_tools` |
 
-Any other stack: `pip install "vectorsmith[qdrant]"` then `from vectorsmith import connect` and `await vs.call(name, args)`. That path does not need the LangChain extra.
+Any other stack: `pip install "vectorsmith[qdrant]"` then `from vectorsmith import connect` and `await vs.call(name, args)`. That path does not need the LangChain extra. `connect` / `load_tools` apply `profiles.enterprise` hardening and resolve `vault` / `aws_sm` / `k8s` credentials the same way `serve` does.
+
+**Remote MCP** (claude.ai, Kubernetes): `serve --http` with `--auth jwt` or `api_key`. Same YAML. [HTTP quickstart](quickstart-selfhost.md).
 
 ## While authoring
 

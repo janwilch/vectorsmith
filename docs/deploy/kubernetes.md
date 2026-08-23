@@ -15,7 +15,7 @@ helm install vectorsmith deploy-templates/helm/vectorsmith \
 | Probe | Path |
 |---|---|
 | Liveness | `GET /healthz` |
-| Readiness | `GET /readyz` (503 if a connection or required embedder is down) |
+| Readiness | `GET /readyz` (503 if a connection, required embedder, or JWT JWKS fetch is down) |
 
 `--shutdown-grace-s` (default 30) matches `terminationGracePeriodSeconds`. During drain, new `POST /mcp` requests return 503; in-flight calls finish.
 
@@ -26,5 +26,7 @@ Two replicas sharing builtin OAuth need `--auth-store redis` and `--redis-url`. 
 ## Secrets
 
 Put the env file in a Secret (`envFileSecret`) and tools.yaml in a ConfigMap (`toolsYaml`). Do not bake URLs or keys into the image.
+
+`connections.*.credentials.provider: k8s` reads an in-cluster Secret via the pod service account (`credentials.k8s.secret`). `vault` and `aws_sm` work the same as on a VM — [enterprise → credentials](../enterprise.md#credentials).
 
 Local: `deploy-templates/compose/docker-compose.yaml` (Qdrant + Redis + serve).

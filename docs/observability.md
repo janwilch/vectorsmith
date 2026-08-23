@@ -4,7 +4,7 @@ Hub: [documentation home](index.md).
 
 ## Audit
 
-`observability.audit` plus `--audit-log` / `--audit-sink` / `--audit-url`. JSONL events include `request_id` (same id as JSON logs and traces). Rows and credentials are never written. Default arg redact: `password`, `token`, `secret`.
+`observability.audit` plus `--audit-log` / `--audit-sink` / `--audit-url`. JSONL events include `request_id` (same id as JSON logs and traces). Rows and credentials are never written. Default arg redact: `password`, `token`, `secret`. Single-project and multi-project HTTP `serve` both enable the YAML audit block; multi-project builds one sink per file unless a CLI `--audit-*` flag overrides.
 
 ## Tracing
 

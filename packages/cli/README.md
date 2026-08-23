@@ -18,6 +18,7 @@ Store extras: `qdrant` · `pgvector` · `chroma` · `pinecone` · `weaviate` · 
 |---|---|---|
 | A **Python agent** (LangChain, LangGraph, OpenAI Agents, Anthropic SDK) | `pip install "vectorsmith[qdrant,langchain]"` | `from vectorsmith import load_tools` |
 | A **chat / IDE host** (Claude Desktop, Claude Code, Codex, Cursor) | `pip install "vectorsmith[qdrant]"` so `vectorsmith` is on `PATH` | `vectorsmith serve tools.yaml --name invoices` |
+| A **remote / Kubernetes MCP server** | `pip install "vectorsmith[qdrant,auth-jwt,otel]"` | `vectorsmith serve tools.yaml --http 0.0.0.0:8080 --auth jwt` |
 
 The agent never sees the store URL, the API key, or hidden tenant filters.
 
@@ -42,7 +43,7 @@ await vs.aclose()
 }
 ```
 
-Host guides: [Claude Desktop](https://kjgpta.github.io/vectorsmith/integrations/claude-desktop/) · [Claude Code](https://kjgpta.github.io/vectorsmith/integrations/claude-code/) · [Codex](https://kjgpta.github.io/vectorsmith/integrations/openai-codex/) · [Cursor](https://kjgpta.github.io/vectorsmith/integrations/cursor/).
+Host guides: [Claude Desktop](https://kjgpta.github.io/vectorsmith/integrations/claude-desktop/) · [Claude Code](https://kjgpta.github.io/vectorsmith/integrations/claude-code/) · [Codex](https://kjgpta.github.io/vectorsmith/integrations/openai-codex/) · [Cursor](https://kjgpta.github.io/vectorsmith/integrations/cursor/). Production HTTP (JWT, `/readyz`, OTel, Helm): [self-host](https://kjgpta.github.io/vectorsmith/quickstart-selfhost/) · [enterprise](https://kjgpta.github.io/vectorsmith/enterprise/).
 
 ## Write a tool, not a prompt
 
@@ -73,5 +74,7 @@ tools:
 ```
 
 `tenant: acme` is **not** in the model-facing schema. Full contract: [tools.yaml reference](https://kjgpta.github.io/vectorsmith/tools-yaml-reference/).
+
+**0.2.0** is the production HTTP server: JWT / API keys, request tenancy, RBAC, Vault / AWS SM / Kubernetes credentials, audit (file / HTTP / OTLP), OpenTelemetry traces, Prometheus `/metrics`, Redis rate limits, `profiles.enterprise` at `serve` time. Extras: `auth-jwt` · `auth-redis` · `otel` · `creds-aws` · `embed-openai` · `embed-cohere` · `rerank-local`.
 
 Apache-2.0. *Forge the tools. Keep the store.*

@@ -5,30 +5,41 @@ Versioning: [SemVer](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.1.4] — 2026-08-23
+## [0.2.0] — 2026-08-23
 
-### Fixed
-
-- HTTP `serve` enables TDS tracing/metrics for a single YAML file (not only multi-project).
-- Multi-project HTTP `serve` reads auth from `engine.project` (no `NameError` on `project`).
-- Redis rate limits use `redis.asyncio` (or `asyncio.to_thread` for a sync test client).
-- `rerank.provider: cross_encoder` no longer silently uses the HTTP provider; encoder instances are cached and `predict` runs in `asyncio.to_thread`.
-- Audit `sink: otlp` posts OTLP HTTP JSON logs instead of a raw event POST.
-- Multi-project `serve` builds each engine's audit sink from that YAML unless `--audit-*` is set.
-- Multi-project `/readyz` checks embed health on every project with search/pipeline tools, not only the default.
-- `connect` / `load_tools` apply `profiles.enterprise` hardening (same refuse rules as `serve`).
-- Multi-project serve unions enterprise flags and observability across all YAMLs.
+Production HTTP MCP server. Every `security.*`, `observability.*`, credential, rerank, and `profiles.enterprise` knob that 0.1.3 *declared* is now applied at `serve` and `connect` — not only at `validate`. Same YAML still compiles to in-process `load_tools`.
 
 ### Added
 
-- `serve` / `connect` resolve `vault`, `aws_sm`, and `k8s` credential providers (`VAULT_ADDR`/`VAULT_TOKEN`, `vectorsmith[creds-aws]`, in-cluster Secrets). **VB4040**–**VB4042**.
-- OTLP span export from `observability.tracing.endpoint` (`vectorsmith[otel]`).
-- Local cross-encoder rerank (`vectorsmith[rerank-local]`); **VB4032** if the extra is missing.
-- `profiles.enterprise` hardening applies at `serve` (not only `validate`).
-- `validate --policy` runs `opa eval` with the compiled TDS as input JSON.
-- `GET /readyz` fetches JWKS when `--auth jwt`.
-- JSON logs include OTel `trace_id` / `span_id` when tracing is on.
-- Claim vs static enterprise examples; TDS v2 schema `$comment` documents the shared structure.
+- Credential resolvers at runtime: `vault` (`VAULT_ADDR` / `VAULT_TOKEN`), `aws_sm` (`vectorsmith[creds-aws]`), and in-cluster `k8s` Secrets. Missing config is **VB4040**–**VB4042**. Extra `vectorsmith[creds-aws]`.
+- OTLP span export from `observability.tracing.endpoint` / `exporter: otlp` (`vectorsmith[otel]` now includes the OTLP HTTP exporter). `exporter: console` still prints spans.
+- Local `rerank.provider: cross_encoder` (`vectorsmith[rerank-local]`). Encoder instances are cached; `predict` runs in `asyncio.to_thread`. Missing extra is **VB4032**; runtime failure keeps vector order (**VB4031**).
+- `profiles.enterprise` hardening at `serve`, `connect`, and `load_tools` (same refuse rules as `validate --enterprise`: authoring/meta off, tenancy required, `limit_max`, allowed backends).
+- `validate --policy FILE.rego` runs `opa eval` with the compiled TDS as input JSON. Each Rego `deny` is **POL001**; missing `opa` is **POL000**.
+- `GET /readyz` fetches JWKS when `--auth jwt` (503 if the IdP is unreachable).
+- JSON logs include OTel `trace_id` / `span_id` when tracing is on (same `request_id` as audit).
+- Audit `sink: otlp` posts OTLP HTTP JSON logs to `{url}/v1/logs` (collector). `sink: http` remains a raw JSONL webhook.
+- Claim vs static enterprise examples (`examples/enterprise/tools.yaml` and `tools.static.yaml`) so copy-paste does not AND both tenancy layers.
+- TDS v2 schema `$comment` documents the shared structure with v1 (`migrate` still only sets `tds_version`, seeds `meta`, and rewrites bare `static_filters` lists).
+
+### Changed
+
+- HTTP `serve` configures tracing, metrics, and audit for a **single** YAML as well as multi-project.
+- Multi-project `serve` unions enterprise flags and observability across every file (strictest authoring/meta; tracing/metrics if any project enables them) and builds each engine’s audit sink from that YAML unless `--audit-*` is set.
+- Multi-project `GET /readyz` checks embed health on every project that has search/pipeline tools (or `--live-embed`), not only the default.
+- Redis rate limits use `redis.asyncio` (or `asyncio.to_thread` for a sync test client). Extra `vectorsmith[auth-redis]`.
+- Helm chart / image tag **0.2.0**. Docs cover the production HTTP surface: JWT, tenancy, RBAC, credentials, probes, OTel, extras.
+
+### Fixed
+
+- Multi-project HTTP `serve` reads auth from `engine.project` (no `NameError` on `project`).
+- `rerank.provider: cross_encoder` no longer silently falls through to the HTTP provider.
+- `connect` / `load_tools` apply `profiles.enterprise` (they previously skipped serve-time hardening).
+
+### Security
+
+- Enterprise hardening refuses a non-compliant process at start, not only in CI `validate`.
+- `/readyz` is the production gate: every connection, required embedder(s), and JWT JWKS. `GET /healthz` stays liveness-only (200).
 
 ## [0.1.3] — 2026-08-22
 

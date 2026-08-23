@@ -42,6 +42,8 @@ flowchart TB
 - Request-scoped `security.tenancy` (claim or header) ANDed on every call, including `run_tool`
 - Limits, field projection, optional pipelines (retrieve then Polars)
 - MCP advertisement (`tools/list`; by default also `list_available_tools` / `run_tool` — same validation path as named tools; `--no-meta-tools` to omit)
+- Request auth (HTTP JWT / API key / builtin OAuth), RBAC, rate limits, credential resolvers, audit / traces / metrics
+- `profiles.enterprise` hardening at `serve` and `connect` (refuse start if the YAML is not production-safe)
 - In-process wrappers for LangChain, LangGraph, OpenAI Agents, Anthropic
 
 The executor (`Engine`) runs **inside** `serve`, `test`, `validate --live`, and `connect` / `load_tools`. Application code does not import it.
@@ -66,8 +68,8 @@ You do not copy `inputSchema` into the LLM SDK. You do not merge VectorSmith int
 
 ## What is not in this repo
 
-Cloud dashboard, hosted VectorSmith, and write tools on your store. Phase-1 OSS is **read-only** tools from YAML.
+Cloud dashboard, hosted VectorSmith, and write tools on your store. OSS is **read-only** tools from YAML. `0.2.0` is the production HTTP server cut (probes, JWT, OTel, Helm) — still not a hosted SaaS.
 
 ## Read next
 
-[Library surface](library.md) · [tools.yaml](tools-yaml-reference.md) · [CLI](cli.md) · [Python API](python-api.md) · [Getting started](getting-started.md)
+[Library surface](library.md) · [tools.yaml](tools-yaml-reference.md) · [CLI](cli.md) · [Python API](python-api.md) · [Enterprise](enterprise.md) · [Getting started](getting-started.md)

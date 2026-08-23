@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: vectorsmith
-  tag: "0.1.4"
+  tag: "0.2.0"
   pullPolicy: IfNotPresent
 
 toolsYaml: configMap

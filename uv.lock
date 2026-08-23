@@ -5338,7 +5338,7 @@ wheels = [
 
 [[package]]
 name = "vectorsmith"
-version = "0.1.4"
+version = "0.2.0"
 source = { editable = "packages/cli" }
 dependencies = [
     { name = "argon2-cffi" },
@@ -5466,7 +5466,7 @@ provides-extras = ["qdrant", "pgvector", "chroma", "pinecone", "weaviate", "milv
 
 [[package]]
 name = "vectorsmith-core"
-version = "0.1.4"
+version = "0.2.0"
 source = { editable = "packages/core" }
 dependencies = [
     { name = "httpx" },
@@ -5544,7 +5544,7 @@ provides-extras = ["qdrant", "pgvector", "chroma", "pinecone", "weaviate", "milv
 
 [[package]]
 name = "vectorsmith-workspace"
-version = "0.1.4"
+version = "0.2.0"
 source = { virtual = "." }
 
 [package.dev-dependencies]
