@@ -9,4 +9,4 @@ Snippets for hosts that **spawn** `vectorsmith serve`. Replace `/absolute/path` 
 | [`codex.config.toml`](codex.config.toml) | Codex (`~/.codex/config.toml` or `.codex/config.toml`) |
 | [`cursor.mcp.json`](cursor.mcp.json) | Cursor (`.cursor/mcp.json`) |
 
-Docs: [integrations](../../docs/integrations/README.md). [Watch the 28s demo](../../docs/assets/demo-launch.mp4).
+Docs: [integrations](../../docs/integrations/README.md). [Watch the 50s demo](../../docs/assets/demo-launch.mp4).

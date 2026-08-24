@@ -2,4 +2,4 @@
   <source src="assets/demo-launch.mp4" type="video/mp4" />
 </video>
 
-*28s — write schema tools once in YAML; Claude / Cursor / Python see those tools, not raw store admin.*
+*~50s — YAML tools, then the same file over MCP or in your Python SDK.*

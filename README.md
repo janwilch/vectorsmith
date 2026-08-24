@@ -43,10 +43,10 @@ VectorSmith is the third option: **the data store stays yours. The tools are a Y
 
 <p align="center">
   <video src="docs/assets/demo-launch.mp4" poster="docs/assets/demo-launch-thumb.png" width="980" controls playsinline preload="metadata">
-    <a href="docs/assets/demo-launch.mp4"><img src="docs/assets/demo-launch-thumb.png" alt="VectorSmith demo: YAML schema tools in Claude (~28s)" width="980" /></a>
+    <a href="docs/assets/demo-launch.mp4"><img src="docs/assets/demo-launch-thumb.png" alt="VectorSmith demo: YAML schema tools in Claude (~50s)" width="980" /></a>
   </video>
   <br />
-  <sup><a href="docs/assets/demo-launch.mp4">Watch the 28s demo</a> · YAML → Claude / Cursor / Python</sup>
+  <sup><a href="docs/assets/demo-launch.mp4">Watch the 50s demo</a> · YAML → Claude / Cursor / Python</sup>
 </p>
 
 ---

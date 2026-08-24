@@ -12,7 +12,7 @@ pip install "vectorsmith[qdrant]"
 
 <p align="center">
   <a href="../../docs/assets/demo-launch.mp4">
-    <img src="../../docs/assets/demo-launch-thumb.png" alt="VectorSmith demo (~28s)" width="720" />
+    <img src="../../docs/assets/demo-launch-thumb.png" alt="VectorSmith demo (~50s)" width="720" />
   </a>
 </p>
 
