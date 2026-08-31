@@ -79,13 +79,17 @@ class ChromaAdapter(VectorBackendAdapter):
         )
         try:
             if req.vector is None:
-                res = await coll.get(where=where, limit=req.limit, include=["metadatas"])
+                res = await coll.get(
+                    where=where,
+                    limit=req.limit,
+                    include=["metadatas", "documents"],
+                )
             else:
                 res = await coll.query(
                     query_embeddings=[req.vector],
                     n_results=req.limit,
                     where=where,
-                    include=["metadatas", "distances"],
+                    include=["metadatas", "documents", "distances"],
                 )
         except Exception as exc:
             raise BackendUnreachable(detail=str(exc)) from exc
@@ -113,14 +117,18 @@ def _chroma_rows(res: Any) -> list[dict[str, Any]]:
     if isinstance(res, dict):
         ids = res.get("ids") or []
         metas = res.get("metadatas") or []
+        docs = res.get("documents") or []
         dists = res.get("distances")
         if ids and isinstance(ids[0], list):
             ids, metas = ids[0], (metas[0] if metas else [])
+            docs = docs[0] if docs else []
             dists = dists[0] if dists else None
         rows = []
         for i, pid in enumerate(ids):
             meta = metas[i] if i < len(metas) and isinstance(metas[i], dict) else {}
             row = {"_id": pid, **meta}
+            if i < len(docs) and isinstance(docs[i], str):
+                row["content"] = docs[i]
             if dists is not None and i < len(dists):
                 row["_score"] = dists[i]
             rows.append(row)
